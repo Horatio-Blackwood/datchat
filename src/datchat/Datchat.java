@@ -1,5 +1,7 @@
 package datchat;
 
+import datchat.client.ClientController;
+import datchat.client.ClientDisplay;
 import datchat.server.Server;
 import datchat.server.ServerController;
 import datchat.server.ServerDisplay;
@@ -85,7 +87,10 @@ public class Datchat {
         
         // LAUNCH CLIENT
         if (mode.equals("-c") || mode.equals("--client")) {
-
+            ClientDisplay cd = new ClientDisplay("localhost", DEFAULT_PORT);
+            ClientController controller = new ClientController(cd);
+            
+            controller.launchClient();
         }
         
         // LAUNCH CLIENT (GUI MODE)

@@ -142,6 +142,7 @@ public class ServerDisplay {
         appendRoom("Chat room.\n");
         JScrollPane chatScrollPane = new JScrollPane(m_chat);
         chatScrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+        chatScrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
         center.add(chatScrollPane);
         
         // Event Message Area
@@ -151,6 +152,7 @@ public class ServerDisplay {
         appendEvent("Events log.\n");
         JScrollPane eventScrollPane = new JScrollPane(m_event);
         eventScrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+        eventScrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
         center.add(eventScrollPane);
         m_frame.add(center);
 

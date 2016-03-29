@@ -8,5 +8,4 @@ public enum MessageType {
     WHOS_ONLINE,
     MESSAGE,
     LOGOUT;
-    
 }
