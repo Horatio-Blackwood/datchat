@@ -1,7 +1,6 @@
 package datchat.client;
 
 import datchat.ChatMessage;
-import static datchat.Datchat.DEFAULT_PORT;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -25,19 +24,23 @@ public class Client {
     /** The socket connection to the server. */
     private Socket socket;
 
+    /** A client listener to alert of events from the client app (model). */
     private ClientListener m_listener;
 
-    // the server, the port and the username
-    private final String m_serverHost;
+    /** Username string. */
     private final String m_username;
+    
+    /** the server, the port and the username. */
+    private final String m_serverHost;
+    
+    /** The port to connect to the server on. */
     private final int m_port;
 
     /**
      * Constructor.
-     * @param server
-     * @param port
-     * @param username
-     * @param cg 
+     * @param server the hostname / ip address of the server.
+     * @param port  the port to connect to the server on.
+     * @param username the username of the user of this client.
      */
     Client(String server, int port, String username) {
         m_serverHost = server;
@@ -45,10 +48,18 @@ public class Client {
         m_username = username;
     }
     
+    /**
+     * Sets the client listener to be alerted of events from this Client.
+     * @param listener the listener to set.  if null, the listener is cleared.
+     */
     public void setClientListener(ClientListener listener) {
         m_listener = listener;
     }
 
+    /**
+     * Called to start the client.
+     * @return 
+     */
     public boolean start() {
         // try to connect to the server
         try {
@@ -83,7 +94,11 @@ public class Client {
         return true;
     }
 
-    //send a message to the console or the GUI
+    /**
+     * Sends a message to the console or the GUI.  This should be used for received msgs only, not for messages 
+     * being published out.
+     * @param msg the message to send to the display.
+     */
     private void display(String msg) {
         if (m_listener != null) {
             m_listener.showMessage(msg);
@@ -104,18 +119,21 @@ public class Client {
         }
     }
 
+    /** Disconnects from the server. */
     private void disconnect() {
         try {
             if (sInput != null) {
                 sInput.close();
             }
         } catch (Exception ex) {
+            ex.printStackTrace();
         }
         try {
             if (sOutput != null) {
                 sOutput.close();
             }
         } catch (Exception ex) {
+            ex.printStackTrace();
         }
         try {
             if (socket != null) {
@@ -128,14 +146,7 @@ public class Client {
         }
     }
 
-    public static void main(String[] args) {
-        ClientDisplay cd = new ClientDisplay("localhost", DEFAULT_PORT);
-        ClientController controller = new ClientController(cd);
-        cd.addListener(controller);
-        controller.launchClient();
-    }
-
-    // class that waits for the message from the server 
+    /** Helper class that runs in a separate thread to listen for messages from the server ti be displayed. */
     class ListenFromServer extends Thread {
         @Override
         public void run() {

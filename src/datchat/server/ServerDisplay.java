@@ -38,9 +38,8 @@ public class ServerDisplay {
     private JTextArea m_chat;
     private JTextArea m_event;
     private JTextField m_tPortNumber;
-    
     private final ArrayList<ServerDisplayListener> m_listeners;
-    private AtomicBoolean m_started = new AtomicBoolean(false);
+    private final AtomicBoolean m_started = new AtomicBoolean(false);
 
     /**
      * Constructs a new Server Display with the supplied default port.

@@ -6,8 +6,6 @@ import datchat.server.Server;
 import datchat.server.ServerController;
 import datchat.server.ServerDisplay;
 import java.text.SimpleDateFormat;
-import java.util.Arrays;
-import java.util.List;
 
 /**
  *
@@ -20,82 +18,106 @@ public class Datchat {
     public static final int DEFAULT_PORT = 55200;
     
     public static final SimpleDateFormat CHAT_DATE_FORMATTER = new SimpleDateFormat("MM/dd/yy HH:mm:ss");
-    private static final List<String> VALID_MODE_ARGS = Arrays.asList("-s", "-c", "-sg", "-cg", "--server", "--client", "--serverg", "--clientg");
+    private static final String SERVER_MODE = "-s";
+    private static final String CLIENT_MODE = "-c";
     
+    /** Prints out the  usage of this application. */
+    private static void printUsage() {
+        System.out.println("How to launch Client:");
+        System.out.println("   - Requires three args for client:  mode, hostname, and IP");
+        System.out.println("   - Example:");
+        System.out.println("        java -jar -c chatServer 54200");
+        
+        System.out.println("How to launch Server:");
+        System.out.println("   - Requires two args for Server:  mode and IP");
+        System.out.println("   - Example:");
+        System.out.println("        java -jar -s 54200");
+        
+        System.out.println("Exiting.");
+    }
+
+    /** Tell the user we're done and quit. */
+    private static void exit() {
+        System.out.println("System exiting.");
+        System.exit(1);        
+    }
+    
+    
+    private static int getPort(String portStr) {
+        int port = 0;
+        try {
+            port = Integer.valueOf(portStr);
+        } catch (NumberFormatException nfe) {
+            System.out.println("Port parameter must be an integral numeric value.  Was:  " + portStr);
+            System.exit(1);
+        }
+        if (port < 1 || port > 65535) {
+            System.out.println("Port parameter must be between 1 and 65535.  Was:  " + port);
+            System.exit(1);
+        }
+        
+        return port;
+    }
     /**
      * Runs DatChat in either server or client mode.
      * @param args the command line arguments
      */
     public static void main(String[] args) {
         // Verifies the right number of args.  Possible fourth arg for setting up an 'admin' password/key?
-        if (args.length != 3) {
-            System.out.println("Requires three args:  mode, hostname, and IP");
-            System.out.println("Example:");
-            System.out.println("    java -jar --server localhost 54200");
-            System.out.println("    java -jar --client chatServer 54200");
-            System.exit(1);
+        if (args.length < 0 || args.length > 3) {
+            System.out.println("Did not provide valid argument length.");
+            printUsage();
+            exit();
         }
         
         
         // validate/store args
         // MODE (server or client) - Arg index 0.
         String mode = args[0];
-        if (!VALID_MODE_ARGS.contains(mode)) {
-            System.out.println("Mode param must be one of the following:");
-            for (String modeOption : VALID_MODE_ARGS) {
-                System.out.println("   - " + modeOption);
-            }
-            System.exit(1);
-        }
-        
-        // SERVER NAME (server mode) or HOSTNAME (client mode) - Arg index 1.
-        String hostname = args[1];
-
-        // PORT - Arg index 2.
         int port = 0;
-        try {
-            port = Integer.valueOf(args[2]);
-        } catch (NumberFormatException nfe) {
-            System.out.println("Port parameter must be an integral value.  Was:  " + args[2]);
-            System.exit(1);
-        }
-        if (port < 1 || port > 65535) {
-            System.out.println("Port must be between 1 and 65535.  Was:  " + port);
-            System.exit(1);
-        }
-        
-        
-        // LAUNCH SERVER
-        if (mode.equals("-s") || mode.equals("--server")) {
-            // create a server object and start it
+        switch (mode) {
+            case SERVER_MODE:
+                if (args.length != 2) {
+                    System.out.println("Did not provide valid argument length.");
+                    printUsage();
+                    exit();
+                }
+                // Get Port
+                port = getPort(args[1]);
+                
+                // Init Server (model), display (view) and controller.
+                Server server = new Server();
+                ServerDisplay serverDisplay = new ServerDisplay(port);
+                ServerController serverCtrl = new ServerController(server, serverDisplay);
 
-        }
-        
-        // LAUNCH SERVER (GUI MODE)
-        if (mode.equals("-sg") || mode.equals("--serverg")) {
-            Server s = new Server();
-            ServerDisplay sd = new ServerDisplay(DEFAULT_PORT);
-            ServerController controller = new ServerController(s, sd);
+                // Add the listeners
+                server.addServerListener(serverCtrl);
+                serverDisplay.addServerDisplayListener(serverCtrl);
 
-            // Add the listeners
-            s.addServerListener(controller);
-            sd.addServerDisplayListener(controller);
-
-            // Launch GUI.
-            sd.launchDisplay();            
-        }
-        
-        // LAUNCH CLIENT
-        if (mode.equals("-c") || mode.equals("--client")) {
-            ClientDisplay cd = new ClientDisplay("localhost", DEFAULT_PORT);
-            ClientController controller = new ClientController(cd);
-            
-            controller.launchClient();
-        }
-        
-        // LAUNCH CLIENT (GUI MODE)
-        if (mode.equals("-cg") || mode.equals("--clientg")) {
-
-        }        
+                // Launch GUI.
+                serverDisplay.launchDisplay();
+                
+                break;
+            case CLIENT_MODE:
+                if (args.length != 3) {
+                    System.out.println("Did not provide valid argument length.");
+                    printUsage();
+                    exit();
+                }
+                // Get host and port from cmd line parameters
+                String hostname = args[1];
+                port = getPort(args[2]);
+                
+                // Create and alunch the client display parameters.
+                ClientDisplay cd = new ClientDisplay(hostname, port);
+                ClientController controller = new ClientController(cd);
+                controller.launchClient();
+                
+                break;
+            default:
+                System.out.println("Invalid mode selected:  " + mode + ".");
+                printUsage();
+                exit();
+        }    
     }
 }

@@ -1,6 +1,7 @@
 package datchat.server;
 
 import datchat.ChatMessage;
+import datchat.Datchat;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -17,39 +18,40 @@ import java.util.concurrent.atomic.AtomicBoolean;
 /**
  * The chat Server main.
  * @author victor
+ * @author adam
  */
 public class Server {
 
     /** a unique ID for each connection. */
     private static int m_uniqueId;
-    
+
     /** An array of client threads. */
     private final ArrayList<ClientThread> m_clientThreads;
-    
+
     /** A date formatter. */
     private static final SimpleDateFormat MSG_DATE_FORMAT = new SimpleDateFormat("HH:mm:ss");
-    
+
     /** The port to listen for clients on. */
     private int m_port;
-    
+
     /** The boolean that will be turned of to stop the server. */
     private AtomicBoolean m_continue;
-    
+
     /** A list of ServerListeners. */
     private final List<ServerListener> m_listeners;
-    
+
+    /** The server socket where we listen for client connections. */
     private ServerSocket m_serverSocket;
 
-    /**
-     * Creates a new server with the specified port and display.
-     */
+
+    /** Creates a new server with the specified port and display. */
     public Server() {
-        m_port = 55200;
+        m_port = Datchat.DEFAULT_PORT;
         m_clientThreads = new ArrayList<>();
         m_listeners = new ArrayList<>();
         m_continue = new AtomicBoolean(false);
     }
-    
+
     /**
      * Adds a new server listener to this server to be informed of server events.
      * @param sl the listener to add.
@@ -60,7 +62,7 @@ public class Server {
         }
     }
 
-    /** 
+    /**
      * Called to start the server.
      * @param port the port to connect on.
      */
@@ -76,23 +78,23 @@ public class Server {
 
                 // accept connection
                 Socket socket = m_serverSocket.accept();
-                
+
                 // This is weird....
                 if (!m_continue.get()) {
                     break;
                 }
-                
+
                 // make a thread
                 ClientThread t = new ClientThread(socket);
                 // save it in the ArrayList
                 m_clientThreads.add(t);
                 t.start();
             }
-            
+
             showServerOutput("Closing down all client conections.");
             closeSockets();
 
-            
+
         } catch (IOException e) {
             String msg = MSG_DATE_FORMAT.format(new Date()) + " Exception on new ServerSocket: " + e + "\n";
             showServerOutput(msg);
@@ -107,7 +109,8 @@ public class Server {
         m_continue.set(false);
         closeSockets();
     }
-    
+
+    /** Closes the connection socket and all client sockets. */
     private void closeSockets() {
         try {
             // Close the server socket.
@@ -140,7 +143,7 @@ public class Server {
             sl.handleServerLogOutput(message);
         }
     }
-    
+
     /**
      * Displays a chat room message (either to the GUI or the console).
      * @param msg the message to show.
@@ -164,14 +167,14 @@ public class Server {
 
         // Show Chat Room Message
         showRoomMessage(formattedMessage);
-        
+
         // Send to Clients
         for (int i = m_clientThreads.size(); --i >= 0;) {
-            
+
             // Send message to client
             ClientThread ct = m_clientThreads.get(i);
             boolean sendFailed = !ct.writeMsg(formattedMessage);
-            
+
             // If we failed to send a message to a given client, their connection is bad, remove them from the list of clients.
             if (sendFailed) {
                 m_clientThreads.remove(i);
@@ -189,14 +192,14 @@ public class Server {
         for (int i = 0; i < m_clientThreads.size(); ++i) {
             ClientThread ct = m_clientThreads.get(i);
             if (ct.id == id) {
-                
+
                 // Disconnect from client.
                 try {
                     ct.socket.close();
                 } catch (IOException ex) {
                     showServerOutput("IO Exception closing client socket:  " + ct.username + ".");
                 }
-                
+
                 m_clientThreads.remove(i);
                 showServerOutput("Removed client:  " + ct.username);
                 //showRoomMessage(ct.username + " disconnected.");
@@ -214,29 +217,37 @@ public class Server {
         Server s = new Server();
         ServerDisplay sd = new ServerDisplay(60000);
         ServerController controller = new ServerController(s, sd);
-        
+
         // Add the listeners
         s.addServerListener(controller);
         sd.addServerDisplayListener(controller);
-        
+
         // Launch GUI.
         sd.launchDisplay();
     }
 
+    /** Helper class that represents each connected chat user. */
     class ClientThread extends Thread {
 
-        // the socket where to listen/talk
-
+        /** Socket for listening for messages from the chat user and publishing messages to them. */
         Socket socket;
+        /** In stream for incoming messages. */
         ObjectInputStream sInput;
+        /** Out stream for outgoing messages. */
         ObjectOutputStream sOutput;
+        /** A user id. */
         int id;
+        /** A username for the user. */
         String username;
-        ChatMessage cm;
-        String date;
+        /** A ChatMessage object used to read the ChatMessage objects from the socket. */
+        ChatMessage m_msg;
+        /** The time the user connected to the server. */
+        String m_connectionTime;
 
-        // Constructore
-
+        /**
+         * Constructor.
+         * @param socket the socket the client connected on.
+         */
         ClientThread(Socket socket) {
             id = ++m_uniqueId;
             this.socket = socket;
@@ -246,19 +257,19 @@ public class Server {
                 sOutput = new ObjectOutputStream(socket.getOutputStream());
                 sInput = new ObjectInputStream(socket.getInputStream());
                 // read the username
-                username = (String) sInput.readObject();
-                
+                username = (String)sInput.readObject() + "@" + socket.getLocalAddress().getHostName();
+
                 // Publish connection information.
                 String join = username + " has connected.";
                 showServerOutput(join);
                 broadcast(join);
-                
+
             } catch (IOException e) {
                 showServerOutput("Exception creating new Input/output Streams: " + e);
                 return;
             } catch (ClassNotFoundException e) {
             }
-            date = MSG_DATE_FORMAT.format(System.currentTimeMillis());
+            m_connectionTime = MSG_DATE_FORMAT.format(System.currentTimeMillis());
         }
 
         @Override
@@ -266,16 +277,16 @@ public class Server {
             boolean keepGoing = true;
             while (keepGoing) {
                 try {
-                    cm = (ChatMessage) sInput.readObject();
+                    m_msg = (ChatMessage) sInput.readObject();
                 } catch (IOException e) {
                     showServerOutput(username + " Exception reading Streams: " + e);
                     break;
                 } catch (ClassNotFoundException e2) {
                     break;
                 }
-                String message = cm.getMessage();
+                String message = m_msg.getMessage();
 
-                switch (cm.getType()) {
+                switch (m_msg.getType()) {
 
                     case MESSAGE:
                         broadcast(username + ": " + message);
@@ -303,7 +314,7 @@ public class Server {
                                 bldr.append(") ");
                                 bldr.append(ct.username);
                                 bldr.append(" since ");
-                                bldr.append(ct.date);
+                                bldr.append(ct.m_connectionTime);
                                 bldr.append(System.lineSeparator());
                             }
                         }
