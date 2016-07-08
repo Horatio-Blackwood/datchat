@@ -313,8 +313,12 @@ public class Server {
                                 bldr.append(i + 1);
                                 bldr.append(") ");
                                 bldr.append(ct.username);
-                                bldr.append(" since ");
-                                bldr.append(ct.m_connectionTime);
+                                bldr.append(System.lineSeparator());
+                                bldr.append("      - from ");
+                                bldr.append(socket.getInetAddress().getHostAddress());
+                                bldr.append(System.lineSeparator());
+                                bldr.append("      - since ");
+                                bldr.append(ct.connectionTime);
                                 bldr.append(System.lineSeparator());
                             }
                         }
