@@ -7,4 +7,4 @@ datchat is written with a Swing front-end using a basic model-view-controller im
 #thanks
 As you can see datchat was forked from this project:  https://github.com/Blackbird93/Chat
 
-Github is awesome right?  I am very thankful for this start - this project was exactly what I needed: short and functional.  I could read the whole thing in ten minutes, and as a bonus it worked fairly well so I was able to start with a known good project and take it forward.  Thanks Blackbird93.
+This project was exactly what I needed: short and functional.  I could read the whole thing in ten minutes, and as a bonus it worked fairly well so I was able to start with a known good project and take it forward.  Thanks Blackbird93.
