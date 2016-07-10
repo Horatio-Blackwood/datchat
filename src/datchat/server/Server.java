@@ -2,6 +2,8 @@ package datchat.server;
 
 import datchat.ChatMessage;
 import datchat.Datchat;
+import datchat.OnlineStatus;
+import datchat.UserStatus;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -182,6 +184,35 @@ public class Server {
             }
         }
     }
+    
+    /**
+     * Broadcasts a message to the users in the chat room.
+     * @param message the message to send out.
+     */
+    private synchronized void broadcastObjMessage(Object message) {
+        String time = MSG_DATE_FORMAT.format(System.currentTimeMillis());
+        StringBuilder bldr = new StringBuilder(time);
+        bldr.append(" - ");
+        bldr.append(message.toString());
+        String formattedMessage = bldr.toString();
+
+        // Show Chat Room Message
+        showRoomMessage(formattedMessage);
+
+        // Send to Clients
+        for (int i = m_clientThreads.size(); --i >= 0;) {
+
+            // Send message to client
+            ClientThread ct = m_clientThreads.get(i);
+            boolean sendFailed = !ct.writeMsg(message);
+
+            // If we failed to send a message to a given client, their connection is bad, remove them from the list of clients.
+            if (sendFailed) {
+                m_clientThreads.remove(i);
+                showServerOutput("Disconnected Client " + ct.username + " removed from list.");
+            }
+        }
+    }    
 
     /**
      * Removes the client with the supplied ID from the list of ClientThreads.
@@ -202,8 +233,13 @@ public class Server {
 
                 m_clientThreads.remove(i);
                 showServerOutput("Removed client:  " + ct.username);
-                //showRoomMessage(ct.username + " disconnected.");
+                
+                // Broadcast Disconnect chat room message
                 broadcast(ct.username + " disconnected.");
+                
+                // Broadcast UserStatus Message object:
+                UserStatus userStat = new UserStatus(ct.username, ct.socket.getInetAddress().getHostName(), ct.connectionTime, OnlineStatus.OFFLINE);
+                broadcastObjMessage(userStat);
                 return;
             }
         }
@@ -242,7 +278,7 @@ public class Server {
         /** A ChatMessage object used to read the ChatMessage objects from the socket. */
         ChatMessage m_msg;
         /** The time the user connected to the server. */
-        String connectionTime;
+        long connectionTime;
 
         /**
          * Constructor.
@@ -269,12 +305,26 @@ public class Server {
                 return;
             } catch (ClassNotFoundException e) {
             }
-            connectionTime = MSG_DATE_FORMAT.format(System.currentTimeMillis());
+            connectionTime = System.currentTimeMillis();
+        }
+        
+        UserStatus getUserStatus(OnlineStatus oStat) {
+            return new UserStatus(username, socket.getInetAddress().getHostName(), connectionTime, oStat);
         }
 
         @Override
         public void run() {
             boolean keepGoing = true;
+            
+            // Publish all of the online user statuses known to this newly connected user.
+            m_clientThreads.stream().forEach((ct) -> {
+                writeMsg(ct.getUserStatus(OnlineStatus.ONLINE));
+            });
+            
+            // Publish This Client's Own User Status to the othert users.
+            UserStatus userStat = getUserStatus(OnlineStatus.ONLINE);
+            broadcastObjMessage(userStat);
+                        
             while (keepGoing) {
                 try {
                     m_msg = (ChatMessage) sInput.readObject();
@@ -318,7 +368,7 @@ public class Server {
                                 bldr.append(socket.getInetAddress().getHostAddress());
                                 bldr.append(System.lineSeparator());
                                 bldr.append("      - since ");
-                                bldr.append(ct.connectionTime);
+                                bldr.append(MSG_DATE_FORMAT.format(ct.connectionTime));
                                 bldr.append(System.lineSeparator());
                             }
                         }
@@ -353,7 +403,12 @@ public class Server {
             }
         }
 
-        private boolean writeMsg(String msg) {
+        /**
+         * Writes the supplied object to object output stream.
+         * @param msg the object to write.
+         * @return true if the writing was successful, false otherwise.
+         */
+        private boolean writeMsg(Object msg) {
             // if client is still connected send the message to it
             if (!socket.isConnected()) {
                 close();

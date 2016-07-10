@@ -1,6 +1,7 @@
 package datchat.client;
 
 import datchat.ChatMessage;
+import datchat.UserStatus;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -152,13 +153,22 @@ public class Client {
         public void run() {
             while (true) {
                 try {
-                    String msg = (String) sInput.readObject();
-                    if (m_listener == null) {
-                        System.out.println(msg);
-                        System.out.print("> ");
+                    Object obj = sInput.readObject();
+                    if (obj instanceof String) {
+                        String msg = (String)obj;
+                        if (m_listener == null) {
+                            System.out.println(msg);
+                            System.out.print("> ");
+                        } else {
+                            m_listener.showMessage(msg);
+                        }                        
+                    } else if (obj instanceof UserStatus) {
+                        UserStatus userStat = (UserStatus)obj;
+                        m_listener.updateStatus(userStat);
                     } else {
-                        m_listener.showMessage(msg);
+                        System.out.println("Received unknown message object:  " + obj);
                     }
+                    
                 } catch (IOException ex) {
                     display("Connection with server closed.");
                     if (m_listener != null) {

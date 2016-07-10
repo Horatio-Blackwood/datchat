@@ -1,5 +1,7 @@
 package datchat.client;
 
+import datchat.UserStatus;
+
 /**
  * 
  * @author adam
@@ -7,6 +9,8 @@ package datchat.client;
 public interface ClientListener {
     
     public void showMessage(String msg);
+    
+    public void updateStatus(UserStatus userStat);
     
     public void connectionFailed();
 }

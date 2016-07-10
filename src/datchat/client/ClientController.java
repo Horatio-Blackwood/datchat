@@ -1,6 +1,7 @@
 package datchat.client;
 
 import datchat.ChatMessage;
+import datchat.UserStatus;
 
 /**
  * A controller for connecting clients and client displays.
@@ -46,6 +47,12 @@ public class ClientController implements ClientDisplayListener, ClientListener {
     public void showMessage(String msg) {
         System.out.println("showing message:  " + msg);
         m_display.showMessage(msg);
+    }
+    
+    @Override
+    public void updateStatus(UserStatus userStat) {
+        System.out.println("rcvd u ser status:  " + userStat.toString());
+        m_display.updateUserStatus(userStat);
     }
 
     @Override

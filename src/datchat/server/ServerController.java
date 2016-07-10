@@ -1,5 +1,7 @@
 package datchat.server;
 
+import datchat.UserStatus;
+
 /**
  * The controller implementation for the server.
  * @author adam

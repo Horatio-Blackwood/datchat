@@ -1,9 +1,12 @@
 package datchat.client;
 
+import datchat.UserStatus;
 import datchat.ChatMessage;
 import datchat.Datchat;
 import datchat.MessageType;
+import datchat.OnlineStatus;
 import java.awt.BorderLayout;
+import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.GridBagConstraints;
@@ -13,13 +16,18 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.ArrayList;
 import java.util.List;
+import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.JList;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
+import javax.swing.ListModel;
+import javax.swing.SwingUtilities;
+import javax.swing.plaf.metal.MetalLookAndFeel;
 
 
 /**
@@ -39,10 +47,10 @@ public class ClientDisplay {
     /** The Text Field for Chat message entry. */
     private JTextField m_chatTextField;
 
-    /** */
+    /** Text field for entering a server host. */
     private final JTextField m_serverHostField;
 
-    /** */
+    /** Text field for entering a server port. */
     private final JTextField m_serverPortField;
 
     /** A button for logging in or out. */
@@ -53,6 +61,9 @@ public class ClientDisplay {
 
     /** The area where instant messages show up. */
     private final JTextArea m_chatArea;
+    
+    /** The list of users currently online. */
+    private SortableListModel<UserStatus> m_userListModel;
 
     /** */
     private boolean m_connected;
@@ -90,6 +101,7 @@ public class ClientDisplay {
 
         // COLUMN 0
         JPanel serverConfigPanel = new JPanel(new GridBagLayout());
+        serverConfigPanel.setBorder(BorderFactory.createEtchedBorder());
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.gridx = 0;
         gbc.gridy = 0;
@@ -123,6 +135,7 @@ public class ClientDisplay {
 
 
         // CONFIGURE COMPONENTS FOR CHAT ROOM TEXT AREA
+        JPanel chatArea = new JPanel(new BorderLayout());
         m_chatArea = new JTextArea("//datchat area\n", 20, 20);
         m_chatArea.setWrapStyleWord(true);
         m_chatArea.setLineWrap(true);
@@ -131,16 +144,20 @@ public class ClientDisplay {
         JScrollPane chatScrollPane = new JScrollPane(m_chatArea);
         chatScrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
         chatScrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
-
-        // CREATE CONTROL PANEL
+        // CREATE CONTROL PANEL (input area)
         JPanel controls = createControlPanel();
+        chatArea.add(serverConfigPanel, BorderLayout.NORTH);
+        chatArea.add(chatScrollPane, BorderLayout.CENTER);
+        chatArea.add(controls, BorderLayout.SOUTH);
+        
+        // CREATE USERLIST PANEL
+        JPanel userlist = createUserList();
 
         // CONFIGURE JFRAME
         m_frame = new JFrame("DatChat Client - " + Datchat.VERSION);
         m_frame.setLayout(new BorderLayout());
-        m_frame.add(serverConfigPanel, BorderLayout.NORTH);
-        m_frame.add(chatScrollPane, BorderLayout.CENTER);
-        m_frame.add(controls, BorderLayout.SOUTH);
+        m_frame.add(chatArea, BorderLayout.CENTER);
+        m_frame.add(userlist, BorderLayout.EAST);
     }
 
     public void launch() {
@@ -235,6 +252,39 @@ public class ClientDisplay {
             }
         });
     }
+    
+    private JPanel createUserList() {
+        // Build Panel
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.setBorder(BorderFactory.createEtchedBorder());
+        
+        // Build Contents
+        m_userListModel = new SortableListModel<>(true);
+        JList<UserStatus> userList = new JList<>(m_userListModel);
+        userList.setCellRenderer((JList<? extends UserStatus> jlist, UserStatus e, int i, boolean isSelected, boolean cellHasFocus) -> {
+            JLabel cell = new JLabel(e.user);
+            cell.setHorizontalAlignment(JLabel.LEFT);
+            cell.setToolTipText("connected since " + Datchat.CHAT_DATE_FORMATTER.format(e.sinceTime) + " on host " + e.hostname + ".");
+            
+            Color deselectedBackground = cell.getBackground();
+            Color deselectedTextColor = cell.getForeground();
+            
+            if (isSelected){
+                cell.setOpaque(true);
+                cell.setBackground(MetalLookAndFeel.getTextHighlightColor());
+            } else {
+                cell.setBackground(deselectedBackground);
+                cell.setForeground(deselectedTextColor);
+            }
+
+            return cell;
+        });
+        
+        // Set contents and return panel
+        panel.add(new JLabel(" Users Online: "), BorderLayout.NORTH);
+        panel.add(userList, BorderLayout.CENTER);
+        return panel;
+    }
 
     private JPanel createControlPanel() {
         JPanel controlPanel = new JPanel(new BorderLayout());
@@ -264,7 +314,24 @@ public class ClientDisplay {
     public void showMessage(String msg) {
         m_chatArea.append(msg);
         m_chatArea.append(System.lineSeparator());
-        m_chatArea.setCaretPosition(m_chatArea.getText().length() - 1);
+        SwingUtilities.invokeLater(() -> {
+            m_chatArea.setCaretPosition(m_chatArea.getText().length() - 1);
+        });
+    }
+    
+    void updateUserStatus(UserStatus userStat) {
+        // Remove the old status...
+        for (UserStatus us : m_userListModel.getAllElements()) {
+            if (us.isSameUser(userStat.user, userStat.hostname)) {
+                m_userListModel.removeElement(us);
+                break;
+            }
+        }
+        
+        // If they're online (not offline) re-add them.
+        if (userStat.status == OnlineStatus.ONLINE) {
+            m_userListModel.addElement(userStat);
+        }
     }
 
 
@@ -284,6 +351,9 @@ public class ClientDisplay {
         // Set connected state flag.
         m_connected = false;
         m_loginoutButton.setText("Login");
+        
+        // Clear Userlist
+        m_userListModel.clear();
     }
 
     public void connectionEstablished() {

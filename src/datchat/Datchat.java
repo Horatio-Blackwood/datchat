@@ -17,7 +17,7 @@ public class Datchat {
     public static final String DATE_CREATED = "9 July 2016";
     public static final int DEFAULT_PORT = 55200;
     
-    public static final SimpleDateFormat CHAT_DATE_FORMATTER = new SimpleDateFormat("HH:mm:ss");
+    public static final SimpleDateFormat CHAT_DATE_FORMATTER = new SimpleDateFormat("MM/dd/yy HH:mm:ss");
     private static final String SERVER_MODE = "-s";
     private static final String CLIENT_MODE = "-c";
     

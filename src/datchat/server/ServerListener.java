@@ -9,5 +9,4 @@ public interface ServerListener {
     public void handleServerLogOutput(String logMessage);
     
     public void handleServerMessageOutput(String message);
-    
 }
