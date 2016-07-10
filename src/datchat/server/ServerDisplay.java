@@ -181,9 +181,9 @@ public class ServerDisplay {
      * @param str the message to append.
      */
     public void appendRoom(String str) {
-        m_chat.append(str);
-        m_chat.append(System.lineSeparator());
         SwingUtilities.invokeLater(() -> {
+            m_chat.append(str);
+            m_chat.append(System.lineSeparator());
             m_chat.setCaretPosition(m_chat.getText().length() - 1);
         });
     }
@@ -193,10 +193,10 @@ public class ServerDisplay {
      * @param str the message to append.
      */
     void appendEvent(String str) {
-        m_event.append(str);
-        m_event.append(System.lineSeparator());
         SwingUtilities.invokeLater(() -> {
-            m_event.setCaretPosition(m_chat.getText().length() - 1);
+            m_event.append(str);
+            m_event.append(System.lineSeparator());
+            m_event.setCaretPosition(m_event.getText().length() - 1);
         });
     }
 

@@ -16,9 +16,8 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 
-
 /**
- * The chat Server main.
+ * The chat Server shell.
  * @author victor
  * @author adam
  */
@@ -76,21 +75,25 @@ public class Server {
             // the socket used by the server
             m_serverSocket = new ServerSocket(m_port);
             while (m_continue.get()) {
-                showServerOutput("Server waiting for Clients on port " + m_port + ".");
+                try {
+                    // wait for and accept connection
+                    showServerOutput("Server waiting for Clients on port " + m_port + ".");
+                    Socket socket = m_serverSocket.accept();
 
-                // accept connection
-                Socket socket = m_serverSocket.accept();
+                    // This is weird....
+                    if (!m_continue.get()) {
+                        break;
+                    }
 
-                // This is weird....
-                if (!m_continue.get()) {
-                    break;
-                }
-
-                // make a thread
-                ClientThread t = new ClientThread(socket);
-                // save it in the ArrayList
-                m_clientThreads.add(t);
-                t.start();
+                    // make a thread
+                    ClientThread t = new ClientThread(socket);
+                    // save it in the ArrayList
+                    m_clientThreads.add(t);
+                    t.start();                    
+                } catch (Exception e) {
+                    // Don't let an error kill the connection thread...
+                    showServerOutput("Error occured listening for clients:  " + e.getMessage());
+                }                
             }
 
             showServerOutput("Closing down all client conections.");
@@ -327,54 +330,57 @@ public class Server {
                         
             while (keepGoing) {
                 try {
-                    m_msg = (ChatMessage) sInput.readObject();
-                } catch (IOException e) {
-                    showServerOutput(username + " Exception reading Streams: " + e);
-                    break;
-                } catch (ClassNotFoundException e2) {
-                    break;
-                }
-                String message = m_msg.getMessage();
-
-                switch (m_msg.getType()) {
-
-                    case MESSAGE:
-                        broadcast(username + ": " + message);
+                    try {
+                        m_msg = (ChatMessage) sInput.readObject();
+                    } catch (IOException e) {
+                        showServerOutput(username + " Exception reading Streams: " + e);
                         break;
-                    case LOGOUT:
-                        showServerOutput(username + " disconnected with a LOGOUT message.");
-                        keepGoing = false;
-                        break;
-                    case WHOS_ONLINE:
-                        StringBuilder bldr = new StringBuilder();
-                        int clients = m_clientThreads.size();
-                        if (clients == 1) {
-                            bldr.append("You are the only one online.  How sad :(");
-                        } else {
-                            bldr.append("\nThere are ");
-                            bldr.append(String.valueOf(m_clientThreads.size()));
-                            bldr.append(" users connected as of ");
-                            bldr.append(MSG_DATE_FORMAT.format(System.currentTimeMillis()));
-                            bldr.append(System.lineSeparator());
-                            // scan all the users connected
-                            for (int i = 0; i < m_clientThreads.size(); ++i) {
-                                ClientThread ct = m_clientThreads.get(i);
-                                bldr.append("   ");
-                                bldr.append(i + 1);
-                                bldr.append(") ");
-                                bldr.append(ct.username);
+                    }
+                    
+                    // Determine Message Type and Handle it.
+                    String message = m_msg.getMessage();
+                    switch (m_msg.getType()) {
+                        case MESSAGE:
+                            broadcast(username + ": " + message);
+                            break;
+                        case LOGOUT:
+                            showServerOutput(username + " disconnected with a LOGOUT message.");
+                            keepGoing = false;
+                            break;
+                        case WHOS_ONLINE:
+                            StringBuilder bldr = new StringBuilder();
+                            int clients = m_clientThreads.size();
+                            if (clients == 1) {
+                                bldr.append("You are the only one online.  How sad :(");
+                            } else {
+                                bldr.append("\nThere are ");
+                                bldr.append(String.valueOf(m_clientThreads.size()));
+                                bldr.append(" users connected as of ");
+                                bldr.append(MSG_DATE_FORMAT.format(System.currentTimeMillis()));
                                 bldr.append(System.lineSeparator());
-                                bldr.append("      - from ");
-                                bldr.append(socket.getInetAddress().getHostAddress());
-                                bldr.append(System.lineSeparator());
-                                bldr.append("      - since ");
-                                bldr.append(MSG_DATE_FORMAT.format(ct.connectionTime));
-                                bldr.append(System.lineSeparator());
+                                // scan all the users connected
+                                for (int i = 0; i < m_clientThreads.size(); ++i) {
+                                    ClientThread ct = m_clientThreads.get(i);
+                                    bldr.append("   ");
+                                    bldr.append(i + 1);
+                                    bldr.append(") ");
+                                    bldr.append(ct.username);
+                                    bldr.append(System.lineSeparator());
+                                    bldr.append("      - from ");
+                                    bldr.append(socket.getInetAddress().getHostAddress());
+                                    bldr.append(System.lineSeparator());
+                                    bldr.append("      - since ");
+                                    bldr.append(MSG_DATE_FORMAT.format(ct.connectionTime));
+                                    bldr.append(System.lineSeparator());
+                                }
                             }
-                        }
-                        writeMsg(bldr.toString());
-                        break;
-                }
+                            writeMsg(bldr.toString());
+                            break;
+                    }
+                } catch (Exception e) {
+                    // General catch-all Not a long-term resident in this class, but during early development...
+                    showServerOutput("Error occured processing thread for client:  " + this.username);
+                }                    
             }
             remove(id);
             close();
