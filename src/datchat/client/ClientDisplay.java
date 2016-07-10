@@ -78,8 +78,6 @@ public class ClientDisplay {
     
     private static final Font FONT = new Font("Monospaced", Font.PLAIN, 13);
     private static final Font BOLD = new Font("Monospaced", Font.BOLD, 13);
-    
-    private static final int MAX_USERNAME_CHARS = 15;
 
     /**
      * Constructor.
@@ -93,7 +91,7 @@ public class ClientDisplay {
         // CREATE COMPONENTS FOR SERVER CONFIGURATION PANEL
         // Username
         m_usernameField = new JTextField(15);
-        m_usernameField.setDocument(new LimitedLengthDocument(MAX_USERNAME_CHARS));
+        m_usernameField.setDocument(new LimitedLengthDocument(Datchat.MAX_USERNAME_CHARS));
         m_usernameField.setText(user);
         m_usernameField.setFont(FONT);
         
@@ -179,8 +177,8 @@ public class ClientDisplay {
         m_frame.add(userScrollPane, BorderLayout.EAST);
         
         // Alert user if default screen name is too long.
-        if (user.length() > MAX_USERNAME_CHARS) {
-            showMessage("Default username '" + user + "' is longer than max username length of " + MAX_USERNAME_CHARS + " characters.");
+        if (user.length() > Datchat.MAX_USERNAME_CHARS) {
+            showMessage("Default username '" + user + "' is longer than max username length of " + Datchat.MAX_USERNAME_CHARS + " characters.");
         }
     }
 
@@ -188,6 +186,7 @@ public class ClientDisplay {
         m_frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         m_frame.setSize(720, 520);
         m_frame.setMinimumSize(new Dimension(720, 520));
+        m_frame.setLocationRelativeTo(null);
         m_frame.setVisible(true);
         m_usernameField.requestFocus();
     }

@@ -30,7 +30,7 @@ import javax.swing.SwingUtilities;
  * @author victor
  * @author adam
  */
-public class ServerDisplay {
+public class ServerDisplay implements ServerOutputHandler {
 
     private static final long serialVersionUID = 1L;
     
@@ -38,7 +38,7 @@ public class ServerDisplay {
     private JButton m_stopStart;
     private JTextArea m_chat;
     private JTextArea m_event;
-    private JTextField m_tPortNumber;
+    private JTextField m_portNumber;
     private final ArrayList<ServerDisplayListener> m_listeners;
     private final AtomicBoolean m_started = new AtomicBoolean(false);
 
@@ -66,7 +66,7 @@ public class ServerDisplay {
         
         // Initialize Server Configuration Panel and components.
         JPanel serverConfigPanel = new JPanel(new GridBagLayout());
-        m_tPortNumber = new JTextField(String.valueOf(port), 4);
+        m_portNumber = new JTextField(String.valueOf(port), 4);
         m_stopStart = new JButton("Start");
         ActionListener al = new ActionListener() {
             @Override
@@ -87,27 +87,30 @@ public class ServerDisplay {
                     // Handle Stop Request.
                     if (sdl != null) {
                         if (m_started.get()) {
+                            // Get Port
                             int port = Datchat.DEFAULT_PORT;
                             try {
-                                port = Integer.parseInt(m_tPortNumber.getText().trim());
+                                port = Integer.parseInt(m_portNumber.getText().trim());
                             } catch (Exception er) {
-                                appendEvent("Invalid port number.  Using default of " + Datchat.DEFAULT_PORT);
+                                handleEventMsg("Invalid port number.  Using default of " + Datchat.DEFAULT_PORT);
                             }
+                            
+                            // Fire Up the Server thread.
                             ServerThread st = new ServerThread(sdl, port);
                             st.start();
-                            m_tPortNumber.setEditable(false);
+                            m_portNumber.setEditable(false);
                             return;                        
                         } else {
-                            appendEvent("Requesting server stop.");
+                            handleEventMsg("Requesting server stop.");
                             sdl.requestServerStop();
-                            m_tPortNumber.setEditable(true);
+                            m_portNumber.setEditable(true);
                             return;
                         }
                     }
                 }
             }
         };
-        m_stopStart.addActionListener(al);        
+        m_stopStart.addActionListener(al);
         
         // Layout Configuration Panel Components
         // ROW 1
@@ -120,7 +123,7 @@ public class ServerDisplay {
         serverConfigPanel.add(new JLabel("Server Port:"), gbc);
         
         gbc.gridx = 1;
-        serverConfigPanel.add(m_tPortNumber, gbc);
+        serverConfigPanel.add(m_portNumber, gbc);
 
         gbc.gridx = 2;
         serverConfigPanel.add(m_stopStart, gbc);
@@ -128,7 +131,7 @@ public class ServerDisplay {
         gbc.gridx = 3;
         gbc.weightx = 1.0f;
         serverConfigPanel.add(new JLabel(), gbc);
-        
+
         
         // Layout Frame
         m_frame.add(serverConfigPanel, BorderLayout.NORTH);
@@ -139,7 +142,7 @@ public class ServerDisplay {
         m_chat = new JTextArea(20, 20);
         m_chat.setEditable(false);
         m_chat.setFont(new Font("Monospaced", Font.PLAIN, 13));
-        appendRoom("Chat room.\n");
+        handleChatRoomMsg("Chat room.\n");
         JScrollPane chatScrollPane = new JScrollPane(m_chat);
         chatScrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
         chatScrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
@@ -149,7 +152,7 @@ public class ServerDisplay {
         m_event = new JTextArea(20, 20);
         m_event.setEditable(false);
         m_event.setFont(new Font("Monospaced", Font.PLAIN, 13));
-        appendEvent("Events log.\n");
+        handleEventMsg("Events log.\n");
         JScrollPane eventScrollPane = new JScrollPane(m_event);
         eventScrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
         eventScrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
@@ -171,8 +174,9 @@ public class ServerDisplay {
     }
     
     public void launchDisplay() {
-        m_frame.setPreferredSize(new Dimension(480, 600));
+        m_frame.setPreferredSize(new Dimension(560, 720));
         m_frame.pack();
+        m_frame.setLocationRelativeTo(null);
         m_frame.setVisible(true);
     }
 
@@ -180,7 +184,8 @@ public class ServerDisplay {
      * Appends a message to the chat room display.
      * @param str the message to append.
      */
-    public void appendRoom(String str) {
+    @Override
+    public void handleChatRoomMsg(String str) {
         SwingUtilities.invokeLater(() -> {
             m_chat.append(str);
             m_chat.append(System.lineSeparator());
@@ -192,9 +197,10 @@ public class ServerDisplay {
      * Appends a message to the server run log display.
      * @param str the message to append.
      */
-    void appendEvent(String str) {
+    @Override
+    public void handleEventMsg(String str) {
         SwingUtilities.invokeLater(() -> {
-            m_event.append(str);
+            m_event.append(Datchat.CHAT_DATE_FORMATTER.format(System.currentTimeMillis()) + "  " + str);
             m_event.append(System.lineSeparator());
             m_event.setCaretPosition(m_event.getText().length() - 1);
         });
@@ -215,8 +221,8 @@ public class ServerDisplay {
             m_sdl.requestServerStart(m_port);
             // the server failed
             m_stopStart.setText("Start");
-            m_tPortNumber.setEditable(true);
-            appendEvent("Server crashed\n");
+            m_portNumber.setEditable(true);
+            handleEventMsg("Server crashed\n");
         }
     }
 }

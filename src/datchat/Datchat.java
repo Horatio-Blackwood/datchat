@@ -5,6 +5,7 @@ import datchat.client.ClientDisplay;
 import datchat.server.Server;
 import datchat.server.ServerController;
 import datchat.server.ServerDisplay;
+import datchat.server.ServerLog;
 import java.text.SimpleDateFormat;
 
 /**
@@ -13,12 +14,18 @@ import java.text.SimpleDateFormat;
  */
 public class Datchat {
 
-    public static final String VERSION = "v0.2a";
-    public static final String DATE_CREATED = "9 July 2016";
+    public static final String VERSION = "v0.3a";
+    public static final String DATE_CREATED = "10 July 2016";
     public static final int DEFAULT_PORT = 55200;
     
     public static final SimpleDateFormat CHAT_DATE_FORMATTER = new SimpleDateFormat("MM/dd/yy HH:mm:ss");
+    public static final SimpleDateFormat CHAT_TIME_FORMATTER = new SimpleDateFormat("HH:mm:ss");
+    public static final SimpleDateFormat CHAT_FILE_FORMATTER = new SimpleDateFormat("yy-MM-dd_HH.mm.ss");
+    
+    public static final int MAX_USERNAME_CHARS = 12;
+    
     private static final String SERVER_MODE = "-s";
+    private static final String SERVER_LOG_MODE = "-sl";
     private static final String CLIENT_MODE = "-c";
     
     /** Prints out the  usage of this application. */
@@ -32,6 +39,11 @@ public class Datchat {
         System.out.println("   - Requires two args for Server:  mode and IP");
         System.out.println("   - Example:");
         System.out.println("        java -jar -s 54200");
+        
+        System.out.println("How to launch Server (with logging):");
+        System.out.println("   - Requires two args for Server:  mode and IP");
+        System.out.println("   - Example:");
+        System.out.println("        java -jar -sl 54200");
         
         System.out.println("Exiting.");
     }
@@ -77,6 +89,7 @@ public class Datchat {
         int port = 0;
         switch (mode) {
             case SERVER_MODE:
+            case SERVER_LOG_MODE:
                 if (args.length != 2) {
                     System.out.println("Did not provide valid argument length.");
                     printUsage();
@@ -88,16 +101,23 @@ public class Datchat {
                 // Init Server (model), display (view) and controller.
                 Server server = new Server();
                 ServerDisplay serverDisplay = new ServerDisplay(port);
-                ServerController serverCtrl = new ServerController(server, serverDisplay);
-
+                ServerController serverCtrl;
+                if (mode.contains("l")) {
+                    serverCtrl = new ServerController(server, serverDisplay, new ServerLog());
+                } else {
+                    serverCtrl = new ServerController(server, serverDisplay);
+                }
+                
                 // Add the listeners
                 server.addServerListener(serverCtrl);
                 serverDisplay.addServerDisplayListener(serverCtrl);
+                
 
                 // Launch GUI.
                 serverDisplay.launchDisplay();
                 
                 break;
+                
             case CLIENT_MODE:
                 if (args.length != 4) {
                     System.out.println("Did not provide valid argument length.");

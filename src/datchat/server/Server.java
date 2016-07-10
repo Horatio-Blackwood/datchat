@@ -9,9 +9,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -29,9 +27,6 @@ public class Server {
     /** An array of client threads. */
     private final ArrayList<ClientThread> m_clientThreads;
 
-    /** A date formatter. */
-    private static final SimpleDateFormat MSG_DATE_FORMAT = new SimpleDateFormat("HH:mm:ss");
-
     /** The port to listen for clients on. */
     private int m_port;
 
@@ -43,6 +38,9 @@ public class Server {
 
     /** The server socket where we listen for client connections. */
     private ServerSocket m_serverSocket;
+    
+    /** Someday to be customized by command line args / configuration... */
+    private String m_serverName = "SERVER";
 
 
     /** Creates a new server with the specified port and display. */
@@ -68,7 +66,7 @@ public class Server {
      * @param port the port to connect on.
      */
     public void start(int port) {
-        showServerOutput("Starting on port:  " + port);
+        showServerLogOutput("Starting on port:  " + port);
         m_port = port;
         m_continue = new AtomicBoolean(true);
         try {
@@ -77,7 +75,7 @@ public class Server {
             while (m_continue.get()) {
                 try {
                     // wait for and accept connection
-                    showServerOutput("Server waiting for Clients on port " + m_port + ".");
+                    showServerLogOutput("Server waiting for Clients on port " + m_port + ".");
                     Socket socket = m_serverSocket.accept();
 
                     // This is weird....
@@ -92,17 +90,17 @@ public class Server {
                     t.start();                    
                 } catch (Exception e) {
                     // Don't let an error kill the connection thread...
-                    showServerOutput("Error occured listening for clients:  " + e.getMessage());
+                    showServerLogOutput("Error occured listening for clients:  " + e.getMessage());
                 }                
             }
 
-            showServerOutput("Closing down all client conections.");
+            showServerLogOutput("Closing down all client conections.");
             closeSockets();
 
 
         } catch (IOException e) {
-            String msg = MSG_DATE_FORMAT.format(new Date()) + " Exception on new ServerSocket: " + e + "\n";
-            showServerOutput(msg);
+            String msg = Datchat.CHAT_TIME_FORMATTER.format(System.currentTimeMillis()) + " Exception on new ServerSocket: " + e + "\n";
+            showServerLogOutput(msg);
         }
     }
 
@@ -129,12 +127,12 @@ public class Server {
                     ct.sOutput.close();
                     ct.socket.close();
                 } catch (IOException ioe) {
-                    showServerOutput("Error closing socket for:  " + ct.username);
+                    showServerLogOutput("Error closing socket for:  " + ct.username);
                 }
             }
 
         } catch (Exception e) {
-            showServerOutput("Exception closing the server and clients: " + e);
+            showServerLogOutput("Exception closing the server and clients: " + e);
         }
     }
 
@@ -142,11 +140,10 @@ public class Server {
      * Displays the supplied server log/output (either to the GUI or to the console).
      * @param msg the message to show.
      */
-    private void showServerOutput(String msg) {
-        String message = MSG_DATE_FORMAT.format(System.currentTimeMillis()) + "  " + msg;
-        for (ServerListener sl : m_listeners) {
-            sl.handleServerLogOutput(message);
-        }
+    private void showServerLogOutput(String msg) {
+        m_listeners.stream().forEach((sl) -> {
+            sl.handleServerLogOutput(msg);
+        });
     }
 
     /**
@@ -154,9 +151,9 @@ public class Server {
      * @param msg the message to show.
      */
     private void showRoomMessage(String msg) {
-        for (ServerListener sl : m_listeners) {
+        m_listeners.stream().forEach((sl) -> {
             sl.handleServerMessageOutput(msg);
-        }
+        });
     }
 
     /**
@@ -164,7 +161,7 @@ public class Server {
      * @param message the message to send out.
      */
     private synchronized void broadcast(String msg) {
-        String message = MSG_DATE_FORMAT.format(System.currentTimeMillis()) + "  " + msg;
+        String message = Datchat.CHAT_TIME_FORMATTER.format(System.currentTimeMillis()) + "  " + msg;
         // Show Chat Room Message
         showRoomMessage(message);
 
@@ -178,7 +175,7 @@ public class Server {
             // If we failed to send a message to a given client, their connection is bad, remove them from the list of clients.
             if (sendFailed) {
                 m_clientThreads.remove(i);
-                showServerOutput("Disconnected Client " + ct.username + " removed from list.");
+                showServerLogOutput("Disconnected Client " + ct.username + " removed from list.");
             }
         }
     }
@@ -188,10 +185,9 @@ public class Server {
      * @param message the message to send out.
      */
     private synchronized void broadcastObjMessage(Object msg) {
-        String message = MSG_DATE_FORMAT.format(System.currentTimeMillis()) + "  " + msg.toString();
-
-        // Show Chat Room Message
-        showServerOutput(message);
+        // Show Server Event Log Message
+        String message = msg.toString();
+        showServerLogOutput(message);
 
         // Send to Clients
         for (int i = m_clientThreads.size(); --i >= 0;) {
@@ -203,7 +199,7 @@ public class Server {
             // If we failed to send a message to a given client, their connection is bad, remove them from the list of clients.
             if (sendFailed) {
                 m_clientThreads.remove(i);
-                showServerOutput("Disconnected Client " + ct.username + " removed from list.");
+                showServerLogOutput("Disconnected Client " + ct.username + " removed from list.");
             }
         }
     }    
@@ -222,14 +218,15 @@ public class Server {
                 try {
                     ct.socket.close();
                 } catch (IOException ex) {
-                    showServerOutput("IO Exception closing client socket:  " + ct.username + ".");
+                    showServerLogOutput("IO Exception closing client socket:  " + ct.username + ".");
                 }
 
                 m_clientThreads.remove(i);
-                showServerOutput("Removed client:  " + ct.username);
+                showServerLogOutput("Removed client:  " + ct.username);
                 
                 // Broadcast Disconnect chat room message
-                broadcast(ct.username + " disconnected.");
+                String broadcastMsg = prepareMsgForBroadcast(m_serverName, ct.username + " disconnected.");
+                broadcast(broadcastMsg);
                 
                 // Broadcast UserStatus Message object:
                 UserStatus userStat = new UserStatus(ct.username, ct.socket.getInetAddress().getHostName(), ct.connectionTime, OnlineStatus.OFFLINE);
@@ -254,6 +251,22 @@ public class Server {
 
         // Launch GUI.
         sd.launchDisplay();
+    }
+    
+    private String prepareMsgForBroadcast(String username, String message) {
+        // Create the message to broadcast, doing some pretty printing 
+        StringBuilder broadcastMsg = new StringBuilder(username);
+        broadcastMsg.append(":");
+        if (username.length() < Datchat.MAX_USERNAME_CHARS) {
+            int spaces = Datchat.MAX_USERNAME_CHARS - username.length();
+            for (int i = 0; i < spaces; i++) {
+                broadcastMsg.append(" ");
+            }
+        }
+        broadcastMsg.append("  ");
+        broadcastMsg.append(message);    
+        
+        return broadcastMsg.toString();
     }
 
     /** Helper class that represents each connected chat user. */
@@ -291,11 +304,12 @@ public class Server {
 
                 // Publish connection information.
                 String join = username + " has connected.";
-                showServerOutput(join);
-                broadcast(join);
+                showServerLogOutput(join);
+                String broadcastMsg = prepareMsgForBroadcast(m_serverName, join);
+                broadcast(broadcastMsg);
 
             } catch (IOException e) {
-                showServerOutput("Exception creating new Input/output Streams: " + e);
+                showServerLogOutput("Exception creating new Input/output Streams: " + e);
                 return;
             } catch (ClassNotFoundException e) {
             }
@@ -324,7 +338,7 @@ public class Server {
                     try {
                         m_msg = (ChatMessage) sInput.readObject();
                     } catch (IOException e) {
-                        showServerOutput(username + " Exception reading Streams: " + e);
+                        showServerLogOutput(username + " Exception reading Streams: " + e);
                         break;
                     }
                     
@@ -332,37 +346,18 @@ public class Server {
                     String message = m_msg.getMessage();
                     switch (m_msg.getType()) {
                         case MESSAGE:
-                            String longest = "";
-                            for (ClientThread ct : m_clientThreads) {
-                                if (ct.username.length() > longest.length()) {
-                                    longest = ct.username;
-                                }
-                            }
-                            
-                            // Create the message to broadcast, doing some pretty printing 
-                            // based on name length to align thee chat messages.
-                            StringBuilder broadcastMsg = new StringBuilder(username);
-                            broadcastMsg.append(":");
-                            if (username.length() < longest.length()) {
-                                int spaces = longest.length() - username.length();
-                                for (int i = 0; i < spaces; i++) {
-                                    broadcastMsg.append(" ");
-                                }
-                            }
-                            broadcastMsg.append("  ");
-                            broadcastMsg.append(message);
-                            
-                            // Send the formatted message.
-                            broadcast(broadcastMsg.toString());
+                            // Prepare/Format the msg and send it.
+                            String broadcastMsg = prepareMsgForBroadcast(username, message);
+                            broadcast(broadcastMsg);
                             break;
                         case LOGOUT:
-                            showServerOutput(username + " disconnected with a LOGOUT message.");
+                            showServerLogOutput(username + " disconnected with a LOGOUT message.");
                             keepGoing = false;
                             break;
                     }
                 } catch (Exception e) {
                     // General catch-all Not a long-term resident in this class, but in early development...
-                    showServerOutput("Error occured processing thread for client:  " + this.username);
+                    showServerLogOutput("Error occured processing thread for client:  " + this.username);
                 }                    
             }
             remove(id);
@@ -406,8 +401,8 @@ public class Server {
             try {
                 sOutput.writeObject(msg);
             } catch (IOException e) {
-                showServerOutput("Error sending message to " + username);
-                showServerOutput(e.toString());
+                showServerLogOutput("Error sending message to " + username);
+                showServerLogOutput(e.toString());
             }
             return true;
         }
