@@ -242,7 +242,7 @@ public class Server {
         /** A ChatMessage object used to read the ChatMessage objects from the socket. */
         ChatMessage m_msg;
         /** The time the user connected to the server. */
-        String m_connectionTime;
+        String connectionTime;
 
         /**
          * Constructor.
@@ -257,7 +257,7 @@ public class Server {
                 sOutput = new ObjectOutputStream(socket.getOutputStream());
                 sInput = new ObjectInputStream(socket.getInputStream());
                 // read the username
-                username = (String)sInput.readObject() + "@" + socket.getLocalAddress().getHostName();
+                username = (String)sInput.readObject();
 
                 // Publish connection information.
                 String join = username + " has connected.";
@@ -269,7 +269,7 @@ public class Server {
                 return;
             } catch (ClassNotFoundException e) {
             }
-            m_connectionTime = MSG_DATE_FORMAT.format(System.currentTimeMillis());
+            connectionTime = MSG_DATE_FORMAT.format(System.currentTimeMillis());
         }
 
         @Override

@@ -71,15 +71,16 @@ public class ClientDisplay {
 
     /**
      * Constructor.
-     * @param host the server's hostname.
-     * @param port the server's port.
+     * @param host the default server hostname (or ip).
+     * @param port the default server port.
+     * @param user the default username to pre-populate the username box with.
      */
-    public ClientDisplay(String host, int port) {
+    public ClientDisplay(String host, int port, String user) {
         m_listeners = new ArrayList<>();
 
         // CREATE COMPONENTS FOR SERVER CONFIGURATION PANEL
         m_usernameField = new JTextField(10);
-        m_usernameField.setText("<user>");
+        m_usernameField.setText(user);
         m_serverHostField = new JTextField(10);
         m_serverHostField.setText(host);
         m_serverPortField = new JTextField(10);
@@ -123,6 +124,8 @@ public class ClientDisplay {
 
         // CONFIGURE COMPONENTS FOR CHAT ROOM TEXT AREA
         m_chatArea = new JTextArea("//datchat area\n", 20, 20);
+        m_chatArea.setWrapStyleWord(true);
+        m_chatArea.setLineWrap(true);
         m_chatArea.setFont(new Font("Monospaced", Font.PLAIN, 13));
         m_chatArea.setEditable(false);
         JScrollPane chatScrollPane = new JScrollPane(m_chatArea);

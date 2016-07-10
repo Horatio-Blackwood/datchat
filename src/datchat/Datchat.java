@@ -13,20 +13,20 @@ import java.text.SimpleDateFormat;
  */
 public class Datchat {
 
-    public static final String VERSION = "v0.1";
-    public static final String DATE_CREATED = "27 March 2015";
+    public static final String VERSION = "v0.1a";
+    public static final String DATE_CREATED = "9 July 2016";
     public static final int DEFAULT_PORT = 55200;
     
-    public static final SimpleDateFormat CHAT_DATE_FORMATTER = new SimpleDateFormat("MM/dd/yy HH:mm:ss");
+    public static final SimpleDateFormat CHAT_DATE_FORMATTER = new SimpleDateFormat("HH:mm:ss");
     private static final String SERVER_MODE = "-s";
     private static final String CLIENT_MODE = "-c";
     
     /** Prints out the  usage of this application. */
     private static void printUsage() {
         System.out.println("How to launch Client:");
-        System.out.println("   - Requires three args for client:  mode, hostname, and IP");
+        System.out.println("   - Requires three args for client:  mode, hostname, IP, and default username");
         System.out.println("   - Example:");
-        System.out.println("        java -jar -c chatServer 54200");
+        System.out.println("        java -jar -c chatServer 54200 atombomb");
         
         System.out.println("How to launch Server:");
         System.out.println("   - Requires two args for Server:  mode and IP");
@@ -64,8 +64,8 @@ public class Datchat {
      */
     public static void main(String[] args) {
         // Verifies the right number of args.  Possible fourth arg for setting up an 'admin' password/key?
-        if (args.length < 0 || args.length > 3) {
-            System.out.println("Did not provide valid argument length.");
+        if (args.length != 2 && args.length != 4) {
+            System.out.println("Did not provide valid argument length must be 2 for server or 4 for client.  Was:  " + args.length);
             printUsage();
             exit();
         }
@@ -99,7 +99,7 @@ public class Datchat {
                 
                 break;
             case CLIENT_MODE:
-                if (args.length != 3) {
+                if (args.length != 4) {
                     System.out.println("Did not provide valid argument length.");
                     printUsage();
                     exit();
@@ -107,9 +107,10 @@ public class Datchat {
                 // Get host and port from cmd line parameters
                 String hostname = args[1];
                 port = getPort(args[2]);
+                String user = args[3];
                 
                 // Create and alunch the client display parameters.
-                ClientDisplay cd = new ClientDisplay(hostname, port);
+                ClientDisplay cd = new ClientDisplay(hostname, port, user);
                 ClientController controller = new ClientController(cd);
                 controller.launchClient();
                 
