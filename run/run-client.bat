@@ -1,1 +1,1 @@
-start javaw -jar datchat.jar -c localhost 50100 user
+start javaw -jar datchat.jar -c localhost 51100 user

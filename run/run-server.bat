@@ -1,1 +1,1 @@
-start javaw -jar datchat.jar -s 50100
+start javaw -jar datchat.jar -sl 51100
