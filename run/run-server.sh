@@ -1,0 +1,1 @@
+java -jar datchat.jar -s 50100

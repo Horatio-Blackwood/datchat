@@ -1,0 +1,1 @@
+java -jar datchat.jar -c localhost 50100 user
