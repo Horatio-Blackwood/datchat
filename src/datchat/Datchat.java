@@ -13,7 +13,7 @@ import java.text.SimpleDateFormat;
  */
 public class Datchat {
 
-    public static final String VERSION = "v0.1a";
+    public static final String VERSION = "v0.2a";
     public static final String DATE_CREATED = "9 July 2016";
     public static final int DEFAULT_PORT = 55200;
     

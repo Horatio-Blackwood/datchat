@@ -5,7 +5,6 @@ package datchat;
  * @author adam
  */
 public enum MessageType {
-    WHOS_ONLINE,
     MESSAGE,
     LOGOUT;
 }

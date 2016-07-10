@@ -143,7 +143,7 @@ public class Server {
      * @param msg the message to show.
      */
     private void showServerOutput(String msg) {
-        String message = MSG_DATE_FORMAT.format(System.currentTimeMillis()) + " " + msg;
+        String message = MSG_DATE_FORMAT.format(System.currentTimeMillis()) + "  " + msg;
         for (ServerListener sl : m_listeners) {
             sl.handleServerLogOutput(message);
         }
@@ -163,22 +163,17 @@ public class Server {
      * Broadcasts a message to the users in the chat room.
      * @param message the message to send out.
      */
-    private synchronized void broadcast(String message) {
-        String time = MSG_DATE_FORMAT.format(System.currentTimeMillis());
-        StringBuilder bldr = new StringBuilder(time);
-        bldr.append(" - ");
-        bldr.append(message);
-        String formattedMessage = bldr.toString();
-
+    private synchronized void broadcast(String msg) {
+        String message = MSG_DATE_FORMAT.format(System.currentTimeMillis()) + "  " + msg;
         // Show Chat Room Message
-        showRoomMessage(formattedMessage);
+        showRoomMessage(message);
 
         // Send to Clients
         for (int i = m_clientThreads.size(); --i >= 0;) {
 
             // Send message to client
             ClientThread ct = m_clientThreads.get(i);
-            boolean sendFailed = !ct.writeMsg(formattedMessage);
+            boolean sendFailed = !ct.writeMsg(message);
 
             // If we failed to send a message to a given client, their connection is bad, remove them from the list of clients.
             if (sendFailed) {
@@ -192,22 +187,18 @@ public class Server {
      * Broadcasts a message to the users in the chat room.
      * @param message the message to send out.
      */
-    private synchronized void broadcastObjMessage(Object message) {
-        String time = MSG_DATE_FORMAT.format(System.currentTimeMillis());
-        StringBuilder bldr = new StringBuilder(time);
-        bldr.append(" - ");
-        bldr.append(message.toString());
-        String formattedMessage = bldr.toString();
+    private synchronized void broadcastObjMessage(Object msg) {
+        String message = MSG_DATE_FORMAT.format(System.currentTimeMillis()) + "  " + msg.toString();
 
         // Show Chat Room Message
-        showRoomMessage(formattedMessage);
+        showServerOutput(message);
 
         // Send to Clients
         for (int i = m_clientThreads.size(); --i >= 0;) {
 
             // Send message to client
             ClientThread ct = m_clientThreads.get(i);
-            boolean sendFailed = !ct.writeMsg(message);
+            boolean sendFailed = !ct.writeMsg(msg);
 
             // If we failed to send a message to a given client, their connection is bad, remove them from the list of clients.
             if (sendFailed) {
@@ -341,44 +332,36 @@ public class Server {
                     String message = m_msg.getMessage();
                     switch (m_msg.getType()) {
                         case MESSAGE:
-                            broadcast(username + ": " + message);
+                            String longest = "";
+                            for (ClientThread ct : m_clientThreads) {
+                                if (ct.username.length() > longest.length()) {
+                                    longest = ct.username;
+                                }
+                            }
+                            
+                            // Create the message to broadcast, doing some pretty printing 
+                            // based on name length to align thee chat messages.
+                            StringBuilder broadcastMsg = new StringBuilder(username);
+                            broadcastMsg.append(":");
+                            if (username.length() < longest.length()) {
+                                int spaces = longest.length() - username.length();
+                                for (int i = 0; i < spaces; i++) {
+                                    broadcastMsg.append(" ");
+                                }
+                            }
+                            broadcastMsg.append("  ");
+                            broadcastMsg.append(message);
+                            
+                            // Send the formatted message.
+                            broadcast(broadcastMsg.toString());
                             break;
                         case LOGOUT:
                             showServerOutput(username + " disconnected with a LOGOUT message.");
                             keepGoing = false;
                             break;
-                        case WHOS_ONLINE:
-                            StringBuilder bldr = new StringBuilder();
-                            int clients = m_clientThreads.size();
-                            if (clients == 1) {
-                                bldr.append("You are the only one online.  How sad :(");
-                            } else {
-                                bldr.append("\nThere are ");
-                                bldr.append(String.valueOf(m_clientThreads.size()));
-                                bldr.append(" users connected as of ");
-                                bldr.append(MSG_DATE_FORMAT.format(System.currentTimeMillis()));
-                                bldr.append(System.lineSeparator());
-                                // scan all the users connected
-                                for (int i = 0; i < m_clientThreads.size(); ++i) {
-                                    ClientThread ct = m_clientThreads.get(i);
-                                    bldr.append("   ");
-                                    bldr.append(i + 1);
-                                    bldr.append(") ");
-                                    bldr.append(ct.username);
-                                    bldr.append(System.lineSeparator());
-                                    bldr.append("      - from ");
-                                    bldr.append(socket.getInetAddress().getHostAddress());
-                                    bldr.append(System.lineSeparator());
-                                    bldr.append("      - since ");
-                                    bldr.append(MSG_DATE_FORMAT.format(ct.connectionTime));
-                                    bldr.append(System.lineSeparator());
-                                }
-                            }
-                            writeMsg(bldr.toString());
-                            break;
                     }
                 } catch (Exception e) {
-                    // General catch-all Not a long-term resident in this class, but during early development...
+                    // General catch-all Not a long-term resident in this class, but in early development...
                     showServerOutput("Error occured processing thread for client:  " + this.username);
                 }                    
             }

@@ -66,11 +66,11 @@ public class Client {
         try {
             socket = new Socket(m_serverHost, m_port);
         } catch (Exception ec) {
-            display("Error connectiong to server:" + ec);
+            display(" - Error connectiong to server:" + ec);
             return false;
         }
 
-        String msg = "Connection accepted " + socket.getInetAddress() + ":" + socket.getPort();
+        String msg = " - Server '" + socket.getInetAddress() + ":" + socket.getPort() + "' accepted connection.";
         display(msg);
 
         /* Creating both Data Stream */
@@ -78,7 +78,7 @@ public class Client {
             sInput = new ObjectInputStream(socket.getInputStream());
             sOutput = new ObjectOutputStream(socket.getOutputStream());
         } catch (IOException eIO) {
-            display("Exception creating new Input/output Streams: " + eIO);
+            display(" - Exception creating new Input/output Streams: " + eIO);
             return false;
         }
 
@@ -88,7 +88,7 @@ public class Client {
         try {
             sOutput.writeObject(m_username);
         } catch (IOException eIO) {
-            display("Exception doing login : " + eIO);
+            display(" - Exception doing login : " + eIO);
             disconnect();
             return false;
         }
@@ -116,7 +116,7 @@ public class Client {
         try {
             sOutput.writeObject(msg);
         } catch (IOException e) {
-            display("Exception writing to server: " + e);
+            display(" - Exception writing to server: " + e);
         }
     }
 
