@@ -14,6 +14,7 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
+import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
@@ -178,6 +179,7 @@ public class ServerDisplay implements ServerOutputHandler {
         m_frame.pack();
         m_frame.setLocationRelativeTo(null);
         m_frame.setVisible(true);
+        m_frame.setIconImage(new ImageIcon("./res/dat_chat_icon_blu.png").getImage());
     }
 
     /**

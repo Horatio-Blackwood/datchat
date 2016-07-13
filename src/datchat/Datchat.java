@@ -14,7 +14,7 @@ import java.text.SimpleDateFormat;
  */
 public class Datchat {
 
-    public static final String VERSION = "v0.3a";
+    public static final String VERSION = "v0.4a";
     public static final String DATE_CREATED = "10 July 2016";
     public static final int DEFAULT_PORT = 55200;
     
@@ -45,7 +45,7 @@ public class Datchat {
         System.out.println("   - Example:");
         System.out.println("        java -jar -sl 54200");
         
-        System.out.println("Exiting.");
+        exit();
     }
 
     /** Tell the user we're done and quit. */

@@ -14,9 +14,16 @@ import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.FocusAdapter;
+import java.awt.event.FocusEvent;
+import java.awt.event.FocusListener;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import javax.swing.BorderFactory;
+import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
@@ -60,6 +67,7 @@ public class ClientDisplay {
     
     /** The list of users currently online. */
     private SortableListModel<UserStatus> m_userListModel;
+    private JList<UserStatus> m_userList;
 
     /** */
     private boolean m_connected;
@@ -78,6 +86,13 @@ public class ClientDisplay {
     
     private static final Font FONT = new Font("Monospaced", Font.PLAIN, 13);
     private static final Font BOLD = new Font("Monospaced", Font.BOLD, 13);
+    
+    private boolean m_blinkIcon = false;
+    private boolean m_iconIsBlue = false;
+    private static final ImageIcon WHT_ICON = new ImageIcon("./res/dat_chat_icon_wht.png");
+    private static final ImageIcon BLU_ICON = new ImageIcon("./res/dat_chat_icon_blu.png");
+    
+    private final ScheduledExecutorService m_blinkScheduler;
 
     /**
      * Constructor.
@@ -180,6 +195,28 @@ public class ClientDisplay {
         if (user.length() > Datchat.MAX_USERNAME_CHARS) {
             showMessage("Default username '" + user + "' is longer than max username length of " + Datchat.MAX_USERNAME_CHARS + " characters.");
         }
+        
+        // Make the icon in the taskbar blink when a new message is received, a user goes online, or 
+        // a user changes status.
+        m_blinkScheduler = Executors.newSingleThreadScheduledExecutor();
+        Runnable iconSwitcher = () -> {
+            if (m_blinkIcon && !m_frame.isFocused()) {
+                if (m_iconIsBlue) {
+                    m_frame.setIconImage(WHT_ICON.getImage());
+                    m_iconIsBlue = false;
+                } else {
+                    m_frame.setIconImage(BLU_ICON.getImage());
+                    m_iconIsBlue = true;
+                }
+            } else {
+                m_blinkIcon = false;
+                if (!m_iconIsBlue) {
+                    m_frame.setIconImage(BLU_ICON.getImage());
+                    m_iconIsBlue = true;
+                }
+            }
+        };
+        m_blinkScheduler.scheduleAtFixedRate(iconSwitcher, 0, 1, TimeUnit.SECONDS);
     }
 
     public void launch() {
@@ -272,8 +309,8 @@ public class ClientDisplay {
         
         // Build Contents
         m_userListModel = new SortableListModel<>(true);
-        JList<UserStatus> userList = new JList<>(m_userListModel);
-        userList.setCellRenderer((JList<? extends UserStatus> jlist, UserStatus e, int i, boolean isSelected, boolean cellHasFocus) -> {
+        m_userList = new JList<>(m_userListModel);
+        m_userList.setCellRenderer((JList<? extends UserStatus> jlist, UserStatus e, int i, boolean isSelected, boolean cellHasFocus) -> {
             JLabel cell = new JLabel(e.user);
             cell.setFont(FONT);
             cell.setHorizontalAlignment(JLabel.LEFT);
@@ -296,7 +333,7 @@ public class ClientDisplay {
         // Set contents and return panel
         JLabel title = new JLabel("Who's on Datchat?");
         panel.add(title, BorderLayout.NORTH);
-        panel.add(userList, BorderLayout.CENTER);
+        panel.add(m_userList, BorderLayout.CENTER);
         return panel;
     }
 
@@ -332,6 +369,9 @@ public class ClientDisplay {
         SwingUtilities.invokeLater(() -> {
             m_chatArea.setCaretPosition(m_chatArea.getText().length() - 1);
         });
+        
+        // Start Blinking Icon.
+        m_blinkIcon = true;
     }
     
     void updateUserStatus(UserStatus userStat) {
@@ -347,6 +387,9 @@ public class ClientDisplay {
         if (userStat.status == OnlineStatus.ONLINE) {
             m_userListModel.addElement(userStat);
         }
+        
+        // Start Blinking Icon.
+        m_blinkIcon = true;
     }
 
 
@@ -368,6 +411,9 @@ public class ClientDisplay {
         
         // Clear Userlist
         m_userListModel.clear();
+        
+        // Start Blinking Icon.
+        m_blinkIcon = true;
     }
 
     public void connectionEstablished() {

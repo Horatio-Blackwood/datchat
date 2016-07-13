@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="210mm"
+   height="297mm"
+   viewBox="0 0 744.09448819 1052.3622047"
+   id="svg2"
+   version="1.1"
+   inkscape:version="0.91 r13725"
+   sodipodi:docname="dat_chat_icon_wht.svg"
+   inkscape:export-filename="E:\Dropbox\Development\Repositories-Github\datchat\res\dat_chat_icon_wht.png"
+   inkscape:export-xdpi="90"
+   inkscape:export-ydpi="90">
+  <defs
+     id="defs4" />
+  <sodipodi:namedview
+     id="base"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageopacity="0.0"
+     inkscape:pageshadow="2"
+     inkscape:zoom="7.9195959"
+     inkscape:cx="297.87774"
+     inkscape:cy="717.13764"
+     inkscape:document-units="px"
+     inkscape:current-layer="layer1"
+     showgrid="false"
+     inkscape:window-width="1920"
+     inkscape:window-height="1017"
+     inkscape:window-x="1912"
+     inkscape:window-y="-8"
+     inkscape:window-maximized="1" />
+  <metadata
+     id="metadata7">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title></dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1">
+    <rect
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.43752113px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       id="rect3336"
+       width="31.562479"
+       height="31.562479"
+       x="270.09192"
+       y="308.76605" />
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:29.53958702px;line-height:125%;font-family:Candara;-inkscape-font-specification:'Candara Bold';letter-spacing:0px;word-spacing:0px;fill:#10509f;fill-opacity:1;stroke:none;stroke-width:0.57346964;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;"
+       x="277.32166"
+       y="329.2594"
+       id="text4138"
+       sodipodi:linespacing="125%"
+       transform="scale(0.98067069,1.0197103)"><tspan
+         sodipodi:role="line"
+         id="tspan4140"
+         x="277.32166"
+         y="329.2594"
+         style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-family:Candara;-inkscape-font-specification:'Candara Bold';stroke:none;stroke-width:0.57346964;fill:#10509f;fill-opacity:1;">d</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:29.53958702px;line-height:125%;font-family:Candara;-inkscape-font-specification:'Candara Bold';letter-spacing:0px;word-spacing:0px;fill:#10509f;fill-opacity:1;stroke:none;stroke-width:0.57346964;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;"
+       x="292.42697"
+       y="328.81781"
+       id="text4138-2"
+       sodipodi:linespacing="125%"
+       transform="scale(0.98067069,1.0197103)"><tspan
+         sodipodi:role="line"
+         id="tspan4140-8"
+         x="292.42697"
+         y="328.81781"
+         style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-family:Candara;-inkscape-font-specification:'Candara Bold';stroke:none;stroke-width:0.57346964;fill:#10509f;fill-opacity:1;">c</tspan></text>
+  </g>
+</svg>
