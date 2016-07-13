@@ -345,7 +345,10 @@ public class ClientDisplay {
             public void actionPerformed(ActionEvent ae) {
                 if (m_connected) {
                     for (ClientDisplayListener cdl : m_listeners) {
-                        cdl.sendMessage(new ChatMessage(MessageType.MESSAGE, m_chatTextField.getText()));
+                        String chatText = m_chatTextField.getText().trim();
+                        if (!"".equals(chatText)) {
+                            cdl.sendMessage(new ChatMessage(MessageType.MESSAGE, m_chatTextField.getText()));
+                        }
                     }
                     m_chatTextField.setText("");
                 }
