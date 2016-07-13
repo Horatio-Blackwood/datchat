@@ -85,8 +85,6 @@ public class Server {
 
                     // make a thread
                     ClientThread t = new ClientThread(socket);
-                    // save it in the ArrayList
-                    m_clientThreads.add(t);
                     t.start();                    
                 } catch (Exception e) {
                     // Don't let an error kill the connection thread...
@@ -294,25 +292,6 @@ public class Server {
         ClientThread(Socket socket) {
             id = ++m_uniqueId;
             this.socket = socket;
-            System.out.println("Thread trying to create Object Input/Output Streams");
-            try {
-                // create output
-                sOutput = new ObjectOutputStream(socket.getOutputStream());
-                sInput = new ObjectInputStream(socket.getInputStream());
-                // read the username
-                username = (String)sInput.readObject();
-
-                // Publish connection information.
-                String join = username + " has connected.";
-                showServerLogOutput(join);
-                String broadcastMsg = prepareMsgForBroadcast(m_serverName, join);
-                broadcast(broadcastMsg);
-
-            } catch (IOException e) {
-                showServerLogOutput("Exception creating new Input/output Streams: " + e);
-                return;
-            } catch (ClassNotFoundException e) {
-            }
             connectionTime = System.currentTimeMillis();
         }
         
@@ -323,6 +302,28 @@ public class Server {
         @Override
         public void run() {
             boolean keepGoing = true;
+            System.out.println("Thread trying to create Object Input/Output Streams");
+            try {
+                // Create out and input streams.
+                sOutput = new ObjectOutputStream(socket.getOutputStream());
+                sInput = new ObjectInputStream(socket.getInputStream());
+                
+                // Wait for the client to send you a username.  If this does not occur, we have an invalid client.
+                username = (String)sInput.readObject();
+                
+                // Alert ot her clients that this client has successfully connected.
+                String join = username + " has connected.";
+                showServerLogOutput(join);
+                String broadcastMsg = prepareMsgForBroadcast(m_serverName, join);
+                broadcast(broadcastMsg);     
+
+            } catch (IOException | ClassNotFoundException e) {
+                showServerLogOutput("Exception creating new Input/output Streams: " + e);
+                return;
+            }
+            
+            // Add this client to the list of connected clients - DO THIS ONLY AFTER SUCCESSFULLY GETTING A USERNAME.
+            m_clientThreads.add(this);            
             
             // Publish all of the online user statuses known to this newly connected user.
             m_clientThreads.stream().forEach((ct) -> {
