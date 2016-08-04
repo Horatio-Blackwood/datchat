@@ -333,7 +333,7 @@ public class ClientDisplay {
         });
         
         // Set contents and return panel
-        JLabel title = new JLabel("Who's on Datchat?");
+        JLabel title = new JLabel("Who's on DatChat?");
         panel.add(title, BorderLayout.NORTH);
         panel.add(m_userList, BorderLayout.CENTER);
         return panel;
