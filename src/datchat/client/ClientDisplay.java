@@ -18,6 +18,7 @@ import java.awt.event.FocusAdapter;
 import java.awt.event.FocusEvent;
 import java.awt.event.FocusListener;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -308,7 +309,8 @@ public class ClientDisplay {
         panel.setBorder(BorderFactory.createEtchedBorder());
         
         // Build Contents
-        m_userListModel = new SortableListModel<>(true);
+        Comparator<UserStatus> comp = (UserStatus t, UserStatus t1) -> t.user.compareToIgnoreCase(t1.user);
+        m_userListModel = new SortableListModel<>(comp);
         m_userList = new JList<>(m_userListModel);
         m_userList.setCellRenderer((JList<? extends UserStatus> jlist, UserStatus e, int i, boolean isSelected, boolean cellHasFocus) -> {
             JLabel cell = new JLabel(e.user);
