@@ -7,7 +7,6 @@ import datchat.server.ServerController;
 import datchat.server.ServerDisplay;
 import datchat.server.ServerLog;
 import java.text.SimpleDateFormat;
-import java.util.logging.Level;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
 

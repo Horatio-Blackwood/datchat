@@ -12,11 +12,9 @@ import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
+import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.awt.event.FocusAdapter;
-import java.awt.event.FocusEvent;
-import java.awt.event.FocusListener;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -221,10 +219,18 @@ public class ClientDisplay {
     }
 
     public void launch() {
+        // Window close op.
         m_frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        m_frame.setSize(720, 520);
-        m_frame.setMinimumSize(new Dimension(720, 520));
-        m_frame.setLocationRelativeTo(null);
+        
+        // Window Size and Position
+        Dimension dim = new Dimension(720, 520);
+        m_frame.setPreferredSize(dim);
+        m_frame.setMinimumSize(dim);
+        Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+        m_frame.setLocation((screenSize.width / 2) - (dim.width / 2), (screenSize.height / 2) - (dim.height / 2));
+        
+        // Set Visible
+        m_frame.pack();
         m_frame.setVisible(true);
         m_usernameField.requestFocus();
     }

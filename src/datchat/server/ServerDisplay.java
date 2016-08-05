@@ -8,6 +8,7 @@ import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.GridLayout;
 import java.awt.Insets;
+import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.WindowAdapter;
@@ -175,11 +176,18 @@ public class ServerDisplay implements ServerOutputHandler {
     }
     
     public void launchDisplay() {
-        m_frame.setPreferredSize(new Dimension(560, 720));
-        m_frame.pack();
-        m_frame.setLocationRelativeTo(null);
-        m_frame.setVisible(true);
+        // Set Icon
         m_frame.setIconImage(new ImageIcon("./res/dat_chat_icon_blu.png").getImage());
+        
+        // Window Size and Position on screen
+        Dimension preferredSize = new Dimension(560, 720);
+        m_frame.setPreferredSize(preferredSize);
+        Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+        m_frame.setLocation((screenSize.width / 2) - (preferredSize.width / 2), (screenSize.height / 2) - (preferredSize.height / 2));
+        
+        // Pack and Show.
+        m_frame.pack();
+        m_frame.setVisible(true);
     }
 
     /**
