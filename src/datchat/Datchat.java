@@ -7,6 +7,9 @@ import datchat.server.ServerController;
 import datchat.server.ServerDisplay;
 import datchat.server.ServerLog;
 import java.text.SimpleDateFormat;
+import java.util.logging.Level;
+import javax.swing.UIManager;
+import javax.swing.UnsupportedLookAndFeelException;
 
 /**
  *
@@ -14,8 +17,8 @@ import java.text.SimpleDateFormat;
  */
 public class Datchat {
 
-    public static final String VERSION = "v0.4a";
-    public static final String DATE_CREATED = "10 July 2016";
+    public static final String VERSION = "v0.5";
+    public static final String DATE_CREATED = "4 August 2016";
     public static final int DEFAULT_PORT = 55200;
     
     public static final SimpleDateFormat CHAT_DATE_FORMATTER = new SimpleDateFormat("MM/dd/yy HH:mm:ss");
@@ -81,6 +84,14 @@ public class Datchat {
             printUsage();
             exit();
         }
+        
+        // Set Host OS Look and Feel.
+        try {
+            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+        } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | UnsupportedLookAndFeelException ex) {
+            System.out.println("Error setting look and feel.");
+            ex.printStackTrace();
+        }        
         
         
         // validate/store args
