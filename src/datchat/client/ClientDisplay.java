@@ -349,7 +349,7 @@ public class ClientDisplay {
                     for (ClientDisplayListener cdl : m_listeners) {
                         String chatText = m_chatTextField.getText().trim();
                         if (!"".equals(chatText)) {
-                            cdl.sendMessage(new ChatMessage(MessageType.MESSAGE, m_chatTextField.getText()));
+                            cdl.sendMessage(new ChatMessage(MessageType.CHAT_MESSAGE, m_chatTextField.getText()));
                         }
                     }
                     m_chatTextField.setText("");

@@ -1,6 +1,7 @@
 package datchat.client;
 
 import datchat.ChatMessage;
+import datchat.MessageType;
 import datchat.UserStatus;
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -17,13 +18,13 @@ import java.net.Socket;
 public class Client {
 
     /** To read from the socket. */
-    private ObjectInputStream sInput;
+    private ObjectInputStream m_sInput;
     
     /** To write on the socket. */
-    private ObjectOutputStream sOutput;
+    private ObjectOutputStream m_sOutput;
     
     /** The socket connection to the server. */
-    private Socket socket;
+    private Socket m_socket;
 
     /** A client listener to alert of events from the client app (model). */
     private ClientListener m_listener;
@@ -64,19 +65,19 @@ public class Client {
     public boolean start() {
         // try to connect to the server
         try {
-            socket = new Socket(m_serverHost, m_port);
+            m_socket = new Socket(m_serverHost, m_port);
         } catch (Exception ec) {
             display(" - Error connectiong to server:" + ec);
             return false;
         }
 
-        String msg = " - Server '" + socket.getInetAddress() + ":" + socket.getPort() + "' accepted connection.";
+        String msg = " - Server '" + m_socket.getInetAddress() + ":" + m_socket.getPort() + "' accepted connection.";
         display(msg);
 
         /* Creating both Data Stream */
         try {
-            sInput = new ObjectInputStream(socket.getInputStream());
-            sOutput = new ObjectOutputStream(socket.getOutputStream());
+            m_sInput = new ObjectInputStream(m_socket.getInputStream());
+            m_sOutput = new ObjectOutputStream(m_socket.getOutputStream());
         } catch (IOException eIO) {
             display(" - Exception creating new Input/output Streams: " + eIO);
             return false;
@@ -86,7 +87,7 @@ public class Client {
         new ListenFromServer().start();
         // Send our username to the server 
         try {
-            sOutput.writeObject(m_username);
+            m_sOutput.writeObject(m_username);
         } catch (IOException eIO) {
             display(" - Exception doing login : " + eIO);
             disconnect();
@@ -114,7 +115,7 @@ public class Client {
      */
     void sendMessage(ChatMessage msg) {
         try {
-            sOutput.writeObject(msg);
+            m_sOutput.writeObject(msg);
         } catch (IOException e) {
             display(" - Exception writing to server: " + e);
         }
@@ -123,22 +124,22 @@ public class Client {
     /** Disconnects from the server. */
     private void disconnect() {
         try {
-            if (sInput != null) {
-                sInput.close();
+            if (m_sInput != null) {
+                m_sInput.close();
             }
         } catch (Exception ex) {
             ex.printStackTrace();
         }
         try {
-            if (sOutput != null) {
-                sOutput.close();
+            if (m_sOutput != null) {
+                m_sOutput.close();
             }
         } catch (Exception ex) {
             ex.printStackTrace();
         }
         try {
-            if (socket != null) {
-                socket.close();
+            if (m_socket != null) {
+                m_socket.close();
             }
         } catch (Exception ex) {
         }
@@ -153,22 +154,41 @@ public class Client {
         public void run() {
             while (true) {
                 try {
-                    Object obj = sInput.readObject();
-                    if (obj instanceof String) {
-                        String msg = (String)obj;
-                        if (m_listener == null) {
-                            System.out.println(msg);
-                            System.out.print("> ");
-                        } else {
-                            m_listener.showMessage(msg);
-                        }                        
-                    } else if (obj instanceof UserStatus) {
-                        UserStatus userStat = (UserStatus)obj;
-                        m_listener.updateStatus(userStat);
-                    } else {
-                        System.out.println("Received unknown message object:  " + obj);
-                    }
+                    ChatMessage cm = (ChatMessage)m_sInput.readObject();
+                    MessageType type = cm.getType();
                     
+                    // The client will switch here on message type, using that information to figure out what
+                    // sort of payload the received message has.  Once that has been determined, the client will
+                    // cast the payload and perform whatever work is necessary.  Client Display Listener and Client 
+                    // Listener should not operate on ChatMessages - the message payloads should be extracted here 
+                    // and appropriate type sbe used for the APIs of these objects.
+                    switch(type) {
+                        case CHAT_MESSAGE:
+                            String msg = (String)cm.getMessage();
+                            if (m_listener == null) {
+                                System.out.println("> " + msg);
+                            } else {
+                                m_listener.showMessage(msg);
+                            }
+                            break;
+                        case LOGOUT:
+                            break;
+                        case USER_STATUS:
+                            UserStatus status = (UserStatus)cm.getMessage();
+                            if (m_listener == null) {
+                                System.out.println("> " + status.toString());
+                            } else {
+                                m_listener.updateStatus(status);
+                            }
+                            break;
+                        default:
+                            String errMsg = "Received unknown message type:  " + type + ", with message payloiad:  " + cm.getMessage();
+                            if (m_listener == null) {
+                                System.out.println(errMsg);
+                            } else {
+                                m_listener.showMessage(errMsg);
+                            }
+                    }
                 } catch (IOException ex) {
                     display("Connection with server closed.");
                     if (m_listener != null) {
@@ -176,6 +196,8 @@ public class Client {
                     }
                     break;
                 } catch (ClassNotFoundException ex) {
+                    // This should never happen.
+                    ex.printStackTrace();
                 }
             }
         }

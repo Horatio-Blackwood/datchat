@@ -2,6 +2,7 @@ package datchat.server;
 
 import datchat.ChatMessage;
 import datchat.Datchat;
+import datchat.MessageType;
 import datchat.OnlineStatus;
 import datchat.UserStatus;
 import java.io.IOException;
@@ -16,13 +17,12 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * The chat Server shell.
- * @author victor
  * @author adam
  */
 public class Server {
 
     /** a unique ID for each connection. */
-    private static int m_uniqueId;
+    private static int m_uniqueId = 0;
 
     /** An array of client threads. */
     private final ArrayList<ClientThread> m_clientThreads;
@@ -154,40 +154,29 @@ public class Server {
         });
     }
 
-    /**
-     * Broadcasts a message to the users in the chat room.
-     * @param message the message to send out.
-     */
-    private synchronized void broadcast(String msg) {
-        String message = Datchat.CHAT_TIME_FORMATTER.format(System.currentTimeMillis()) + "  " + msg;
-        // Show Chat Room Message
-        showRoomMessage(message);
-
-        // Send to Clients
-        for (int i = m_clientThreads.size(); --i >= 0;) {
-
-            // Send message to client
-            ClientThread ct = m_clientThreads.get(i);
-            boolean sendFailed = !ct.writeMsg(message);
-
-            // If we failed to send a message to a given client, their connection is bad, remove them from the list of clients.
-            if (sendFailed) {
-                m_clientThreads.remove(i);
-                showServerLogOutput("Disconnected Client " + ct.username + " removed from list.");
-            }
-        }
-    }
     
-    /**
-     * Broadcasts a message to the users in the chat room.
-     * @param message the message to send out.
-     */
-    private synchronized void broadcastObjMessage(Object msg) {
-        // Show Server Event Log Message
-        String message = msg.toString();
-        showServerLogOutput(message);
-
-        // Send to Clients
+    private synchronized void broadcastChatMessage(ChatMessage msg) {
+        // Do Server Side Message Processing
+        MessageType type = msg.getType();
+        switch (type) {
+            case USER_STATUS:
+                UserStatus status = (UserStatus)msg.getMessage();
+                showServerLogOutput(status.toString());
+                break;
+            case LOGOUT:
+                // Do nothing?
+                break;
+            case CHAT_MESSAGE:
+                String message = Datchat.CHAT_TIME_FORMATTER.format(System.currentTimeMillis()) + "  " + msg.getMessage();
+                showRoomMessage(message);
+                
+                // Update message for client processing with newly formatted chat message contents (date/time group etc.)
+                msg = new ChatMessage(MessageType.CHAT_MESSAGE, message);
+                break;
+        }
+        
+        // Once Server Side Processing is complet, send the message to the Clients.
+        // --- For Each Client...
         for (int i = m_clientThreads.size(); --i >= 0;) {
 
             // Send message to client
@@ -196,12 +185,13 @@ public class Server {
 
             // If we failed to send a message to a given client, their connection is bad, remove them from the list of clients.
             if (sendFailed) {
-                m_clientThreads.remove(i);
+                remove(ct.id);
                 showServerLogOutput("Disconnected Client " + ct.username + " removed from list.");
             }
-        }
-    }    
+        }        
+    }
 
+    
     /**
      * Removes the client with the supplied ID from the list of ClientThreads.
      * TODO - make client list a map?
@@ -213,22 +203,19 @@ public class Server {
             if (ct.id == id) {
 
                 // Disconnect from client.
-                try {
-                    ct.socket.close();
-                } catch (IOException ex) {
-                    showServerLogOutput("IO Exception closing client socket:  " + ct.username + ".");
-                }
+                ct.close();
 
                 m_clientThreads.remove(i);
                 showServerLogOutput("Removed client:  " + ct.username);
                 
                 // Broadcast Disconnect chat room message
                 String broadcastMsg = prepareMsgForBroadcast(m_serverName, ct.username + " disconnected.");
-                broadcast(broadcastMsg);
+                broadcastChatMessage(new ChatMessage(MessageType.CHAT_MESSAGE, broadcastMsg));
                 
                 // Broadcast UserStatus Message object:
-                UserStatus userStat = new UserStatus(ct.username, ct.socket.getInetAddress().getHostName(), ct.connectionTime, OnlineStatus.OFFLINE);
-                broadcastObjMessage(userStat);
+                UserStatus userStat = ct.getUserStatus(OnlineStatus.OFFLINE);
+                ChatMessage status = new ChatMessage(MessageType.USER_STATUS, userStat);
+                broadcastChatMessage(status);
                 return;
             }
         }
@@ -302,7 +289,6 @@ public class Server {
         @Override
         public void run() {
             boolean keepGoing = true;
-            System.out.println("Thread trying to create Object Input/Output Streams");
             try {
                 // Create out and input streams.
                 sOutput = new ObjectOutputStream(socket.getOutputStream());
@@ -315,7 +301,7 @@ public class Server {
                 String join = username + " has connected.";
                 showServerLogOutput(join);
                 String broadcastMsg = prepareMsgForBroadcast(m_serverName, join);
-                broadcast(broadcastMsg);     
+                broadcastChatMessage(new ChatMessage(MessageType.CHAT_MESSAGE, broadcastMsg));
 
             } catch (IOException | ClassNotFoundException e) {
                 showServerLogOutput("Exception creating new Input/output Streams: " + e);
@@ -327,13 +313,14 @@ public class Server {
             
             // Publish all of the online user statuses known to this newly connected user.
             m_clientThreads.stream().forEach((ct) -> {
-                writeMsg(ct.getUserStatus(OnlineStatus.ONLINE));
+                writeMsg(new ChatMessage(MessageType.USER_STATUS, ct.getUserStatus(OnlineStatus.ONLINE)));
             });
             
             // Publish This Client's Own User Status to the othert users.
             UserStatus userStat = getUserStatus(OnlineStatus.ONLINE);
-            broadcastObjMessage(userStat);
-                        
+            ChatMessage status = new ChatMessage(MessageType.USER_STATUS, userStat);
+            broadcastChatMessage(status);
+
             while (keepGoing) {
                 try {
                     try {
@@ -344,12 +331,14 @@ public class Server {
                     }
                     
                     // Determine Message Type and Handle it.
-                    String message = m_msg.getMessage();
                     switch (m_msg.getType()) {
-                        case MESSAGE:
+                        case CHAT_MESSAGE:
+                            // Get the payload (a String) and smash-cast it to a String for further use.
+                            String message = (String)m_msg.getMessage();
+                            
                             // Prepare/Format the msg and send it.
                             String broadcastMsg = prepareMsgForBroadcast(username, message);
-                            broadcast(broadcastMsg);
+                            broadcastChatMessage(new ChatMessage(MessageType.CHAT_MESSAGE, broadcastMsg));
                             break;
                         case LOGOUT:
                             showServerLogOutput(username + " disconnected with a LOGOUT message.");
@@ -372,28 +361,31 @@ public class Server {
                 if (sOutput != null) {
                     sOutput.close();
                 }
-            } catch (Exception e) {
+            } catch (IOException e) {
+                showServerLogOutput("IO Exception closing client output stream:  " + this.username + ".");
             }
             try {
                 if (sInput != null) {
                     sInput.close();
                 }
-            } catch (Exception e) {
-            };
+            } catch (IOException e) {
+                showServerLogOutput("IO Exception closing client input stream:  " + this.username + ".");
+            }
             try {
                 if (socket != null) {
                     socket.close();
                 }
-            } catch (Exception e) {
+            } catch (IOException e) {
+                showServerLogOutput("IO Exception closing client socket:  " + this.username + ".");
             }
         }
 
         /**
-         * Writes the supplied object to object output stream.
-         * @param msg the object to write.
+         * Writes the supplied ChatMessage object to the output stream.
+         * @param msg the ChatMessage object to write.
          * @return true if the writing was successful, false otherwise.
          */
-        private boolean writeMsg(Object msg) {
+        private boolean writeMsg(ChatMessage msg) {
             // if client is still connected send the message to it
             if (!socket.isConnected()) {
                 close();
@@ -401,11 +393,12 @@ public class Server {
             }
             try {
                 sOutput.writeObject(msg);
+                return true;
             } catch (IOException e) {
                 showServerLogOutput("Error sending message to " + username);
                 showServerLogOutput(e.toString());
+                return false;
             }
-            return true;
         }
     }
 }

@@ -31,7 +31,6 @@ public class ClientController implements ClientDisplayListener, ClientListener {
 
     @Override
     public boolean connect(String host, int port, String username) {
-        System.out.println("Connecting.");
         m_client = new Client(host, port, username);
         m_client.setClientListener(this);
         return m_client.start();
@@ -39,25 +38,21 @@ public class ClientController implements ClientDisplayListener, ClientListener {
 
     @Override
     public void sendMessage(ChatMessage msg) {
-        System.out.println("sending msg:  " + msg.getMessage());
         m_client.sendMessage(msg);
     }
 
     @Override
     public void showMessage(String msg) {
-        System.out.println("showing message:  " + msg);
         m_display.showMessage(msg);
     }
     
     @Override
     public void updateStatus(UserStatus userStat) {
-        System.out.println("rcvd u ser status:  " + userStat.toString());
         m_display.updateUserStatus(userStat);
     }
 
     @Override
     public void connectionFailed() {
-        System.out.println("connection failed.");
         //m_client.stop(); ???
         m_client = null;
         m_display.connectionFailed();

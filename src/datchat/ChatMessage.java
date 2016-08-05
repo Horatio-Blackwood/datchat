@@ -16,15 +16,15 @@ public class ChatMessage implements Serializable {
     /** The message type. */
     private final MessageType m_type;
     
-    /** The message itself. */
-    private final String m_message;
+    /** The payload of the message itself. */
+    private final Object m_message;
 
     /**
      * Creates a ChatMessage with the type and message supplied.
      * @param type the type of message.
      * @param message the message payload.
      */
-    public ChatMessage(MessageType type, String message) {
+    public ChatMessage(MessageType type, Object message) {
         m_type = type;
         m_message = message;
     }
@@ -41,7 +41,7 @@ public class ChatMessage implements Serializable {
      * Returns the text of the message to be delivered.
      * @return the text of the message to be delivered.
      */
-    public String getMessage() {
+    public Object getMessage() {
         return m_message;
     }
 }
